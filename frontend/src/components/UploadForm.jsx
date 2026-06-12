@@ -13,12 +13,14 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
   });
   
   const handleFileChange = (e) => {
+    console.log("Primary file change fired!", e.target.files);
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
     }
   };
 
   const handleAuxFileChange = (e) => {
+    console.log("Aux file change fired!", e.target.files);
     if (e.target.files && e.target.files.length > 0) {
       setAuxFile(e.target.files[0]);
     }
@@ -42,7 +44,7 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
         <Settings size={18} color="var(--accent)" /> Parameters
       </h3>
       
-      <label className={`file-drop-area ${file ? 'has-file' : ''}`} style={{ display: 'block', cursor: 'pointer' }}>
+      <label htmlFor="primary-upload" className={`file-drop-area ${file ? 'has-file' : ''}`} style={{ display: 'block', cursor: 'pointer' }}>
         <UploadCloud className="file-drop-icon" size={28} />
         {file ? (
           <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0 }}>{file.name}</p>
@@ -50,14 +52,14 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
           <p style={{ fontSize: '0.9rem', margin: 0, color: 'var(--text-secondary)' }}>Click to upload GPX file</p>
         )}
         <input 
+          id="primary-upload"
           type="file" 
-          accept=".gpx" 
           style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }} 
           onChange={handleFileChange}
         />
       </label>
 
-      <label className={`file-drop-area ${auxFile ? 'has-file' : ''}`} style={{ display: 'block', cursor: 'pointer', marginTop: '12px', minHeight: '80px', padding: '12px' }}>
+      <label htmlFor="aux-upload" className={`file-drop-area ${auxFile ? 'has-file' : ''}`} style={{ display: 'block', cursor: 'pointer', marginTop: '12px', minHeight: '80px', padding: '12px' }}>
         {auxFile ? (
           <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0 }}>{auxFile.name}</p>
         ) : (
@@ -67,8 +69,8 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
           </div>
         )}
         <input 
+          id="aux-upload"
           type="file" 
-          accept=".gpx" 
           style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }} 
           onChange={handleAuxFileChange}
         />
