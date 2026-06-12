@@ -75,38 +75,28 @@ P_kin   = m·v·a
 
 ---
 
-## Phase 2 — FastAPI + React Dashboard — 🔜 NEXT
+## Phase 2 — FastAPI + React Dashboard — ✅ COMPLETE
 
 ### Backend
 - `POST /api/analyze` — multipart GPX upload + params → summary + downsampled point series
-- Downsampling to ~1,000 points (distance-bucketed, preserving power extremes)
+- Downsampling to ~1,000 points (distance-bucketed, preserving power extremes and stationary pauses)
 - `GET /api/health`
 - CORS configured
 
 ### Frontend
 - Vite + React + Recharts
 - Upload form with parameter inputs (kg, tires, position, drivetrain)
-- ComposedChart: elevation area + speed line + power line, dual Y-axes
-- Stat cards: distance, moving time, avg/NP/peak power, kJ, elevation gain
+- ComposedChart: elevation area + speed line + power line, dual Y-axes, mobile-responsive smart smoothing
+- Stat cards & Histograms: distance, moving time, avg/NP/peak power, kJ, elevation gain, distribution charts
 
-### Files to create
-- `backend/app/main.py` — FastAPI app
-- `backend/app/api/__init__.py`
-- `backend/app/api/analyze.py` — analyze endpoint
-- `frontend/` — Vite scaffold
-- `frontend/src/App.jsx`
-- `frontend/src/api/client.js`
-- `frontend/src/components/UploadForm.jsx`
-- `frontend/src/components/RideChart.jsx`
-- `frontend/src/components/StatsSummary.jsx`
-
-### Verification
-- `curl -F "file=@Outdoor_cycling.gpx" http://localhost:8000/api/analyze` returns JSON
-- Browser upload + chart renders sensible curves
+### Deployment
+- Docker containerization (`docker-compose up -d`)
+- Multi-stage Node.js (Vite + Nginx Reverse Proxy)
+- Python FastAPI backend
 
 ---
 
-## Phase 3 — Persistence & Auth — 📋 PLANNED
+## Phase 3 — Persistence & Auth — 🔜 NEXT
 
 - SQLite via SQLAlchemy: Users, Bikes, Rides tables per spec
 - JWT auth (bcrypt + PyJWT): register, login, protected routes
