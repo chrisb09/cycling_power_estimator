@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { UploadCloud, Bike, Weight, Settings } from 'lucide-react';
 
 export default function UploadForm({ onAnalyze, isLoading, initialFile = null, initialParams = null }) {
@@ -12,9 +12,6 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
     drivetrain: 'average'
   });
   
-  const fileInputRef = useRef(null);
-  const auxFileInputRef = useRef(null);
-
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
@@ -45,34 +42,22 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
         <Settings size={18} color="var(--accent)" /> Parameters
       </h3>
       
-      <div 
-        className={`file-drop-area ${file ? 'has-file' : ''}`}
-        onClick={() => fileInputRef.current?.click()}
-      >
+      <label className={`file-drop-area ${file ? 'has-file' : ''}`} style={{ display: 'block', cursor: 'pointer' }}>
         <UploadCloud className="file-drop-icon" size={28} />
         {file ? (
           <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0 }}>{file.name}</p>
         ) : (
-          <p style={{ fontSize: '0.9rem', margin: 0, color: 'var(--text-secondary)' }}>Click or drag to upload GPX file</p>
+          <p style={{ fontSize: '0.9rem', margin: 0, color: 'var(--text-secondary)' }}>Click to upload GPX file</p>
         )}
         <input 
           type="file" 
           accept=".gpx" 
-          style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0 }} 
-          ref={fileInputRef}
-          onChange={(e) => {
-            e.stopPropagation();
-            handleFileChange(e);
-          }}
-          onClick={(e) => e.stopPropagation()}
+          style={{ display: 'none' }} 
+          onChange={handleFileChange}
         />
-      </div>
+      </label>
 
-      <div 
-        className={`file-drop-area ${auxFile ? 'has-file' : ''}`}
-        onClick={() => auxFileInputRef.current?.click()}
-        style={{ marginTop: '12px', minHeight: '80px', padding: '12px' }}
-      >
+      <label className={`file-drop-area ${auxFile ? 'has-file' : ''}`} style={{ display: 'block', cursor: 'pointer', marginTop: '12px', minHeight: '80px', padding: '12px' }}>
         {auxFile ? (
           <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0 }}>{auxFile.name}</p>
         ) : (
@@ -84,15 +69,10 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
         <input 
           type="file" 
           accept=".gpx" 
-          style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0 }} 
-          ref={auxFileInputRef}
-          onChange={(e) => {
-            e.stopPropagation();
-            handleAuxFileChange(e);
-          }}
-          onClick={(e) => e.stopPropagation()}
+          style={{ display: 'none' }} 
+          onChange={handleAuxFileChange}
         />
-      </div>
+      </label>
 
       <div className="grid grid-cols-2" style={{ marginTop: '16px' }}>
         <div className="form-group">
