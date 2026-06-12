@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { UploadCloud, Bike, Weight, Settings } from 'lucide-react';
 
 export default function UploadForm({ onAnalyze, isLoading, initialFile = null, initialParams = null }) {
@@ -12,19 +12,39 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
     drivetrain: 'average'
   });
   
-  const handleFileChange = (e) => {
-    console.log("Primary file change fired!", e.target.files);
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
-    }
-  };
+  const primaryRef = useRef(null);
+  const auxRef = useRef(null);
 
-  const handleAuxFileChange = (e) => {
-    console.log("Aux file change fired!", e.target.files);
-    if (e.target.files && e.target.files.length > 0) {
-      setAuxFile(e.target.files[0]);
-    }
-  };
+  // Use NATIVE event listeners to completely bypass React's synthetic event system
+  useEffect(() => {
+    const el = primaryRef.current;
+    if (!el) return;
+    
+    const handler = (e) => {
+      console.log("NATIVE primary change fired!", e.target.files);
+      if (e.target.files && e.target.files.length > 0) {
+        setFile(e.target.files[0]);
+      }
+    };
+    
+    el.addEventListener('change', handler);
+    return () => el.removeEventListener('change', handler);
+  }, []);
+
+  useEffect(() => {
+    const el = auxRef.current;
+    if (!el) return;
+    
+    const handler = (e) => {
+      console.log("NATIVE aux change fired!", e.target.files);
+      if (e.target.files && e.target.files.length > 0) {
+        setAuxFile(e.target.files[0]);
+      }
+    };
+    
+    el.addEventListener('change', handler);
+    return () => el.removeEventListener('change', handler);
+  }, []);
 
   const handleParamChange = (e) => {
     const { name, value } = e.target;
@@ -44,24 +64,31 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
         <Settings size={18} color="var(--accent)" /> Parameters
       </h3>
       
-      <label htmlFor="primary-upload" className={`file-drop-area ${file ? 'has-file' : ''}`} style={{ display: 'block', cursor: 'pointer' }}>
+      <div 
+        className={`file-drop-area ${file ? 'has-file' : ''}`}
+        onClick={() => primaryRef.current?.click()}
+        style={{ position: 'relative', overflow: 'hidden' }}
+      >
         <UploadCloud className="file-drop-icon" size={28} />
         {file ? (
-          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0 }}>{file.name}</p>
+          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0, color: 'var(--accent)' }}>SUCCESS! File loaded: {file.name}</p>
         ) : (
           <p style={{ fontSize: '0.9rem', margin: 0, color: 'var(--text-secondary)' }}>Click to upload GPX file</p>
         )}
         <input 
-          id="primary-upload"
+          ref={primaryRef}
           type="file" 
-          style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }} 
-          onChange={handleFileChange}
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} 
         />
-      </label>
+      </div>
 
-      <label htmlFor="aux-upload" className={`file-drop-area ${auxFile ? 'has-file' : ''}`} style={{ display: 'block', cursor: 'pointer', marginTop: '12px', minHeight: '80px', padding: '12px' }}>
+      <div 
+        className={`file-drop-area ${auxFile ? 'has-file' : ''}`}
+        onClick={() => auxRef.current?.click()}
+        style={{ marginTop: '12px', minHeight: '80px', padding: '12px', position: 'relative', overflow: 'hidden' }}
+      >
         {auxFile ? (
-          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0 }}>{auxFile.name}</p>
+          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0, color: 'var(--accent)' }}>SUCCESS! Aux File loaded: {auxFile.name}</p>
         ) : (
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontSize: '0.85rem', margin: '0 0 4px 0', color: 'var(--text-secondary)' }}><strong style={{ color: 'var(--text-primary)' }}>Optional:</strong> Upload a secondary GPX file</p>
@@ -69,12 +96,11 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
           </div>
         )}
         <input 
-          id="aux-upload"
+          ref={auxRef}
           type="file" 
-          style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }} 
-          onChange={handleAuxFileChange}
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} 
         />
-      </label>
+      </div>
 
       <div className="grid grid-cols-2" style={{ marginTop: '16px' }}>
         <div className="form-group">
