@@ -1,0 +1,22 @@
+# Database
+*.db
+*.sqlite3
+
+# File Storage
+backend/storage/
+storage/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.DS_Store
