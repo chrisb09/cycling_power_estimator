@@ -12,6 +12,9 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
     drivetrain: 'average'
   });
   
+  const [isDragging, setIsDragging] = useState(false);
+  const [isAuxDragging, setIsAuxDragging] = useState(false);
+  
   const primaryRef = useRef(null);
   const auxRef = useRef(null);
 
@@ -46,6 +49,28 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
     return () => el.removeEventListener('change', handler);
   }, []);
 
+  const handleDragOver = (e, setDragging) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(true);
+  };
+
+  const handleDragLeave = (e, setDragging) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(false);
+  };
+
+  const handleDrop = (e, setDragging, setter) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setter(e.dataTransfer.files[0]);
+    }
+  };
+
   const handleParamChange = (e) => {
     const { name, value } = e.target;
     setParams(p => ({ ...p, [name]: value }));
@@ -65,8 +90,11 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
       </h3>
       
       <div 
-        className={`file-drop-area ${file ? 'has-file' : ''}`}
+        className={`file-drop-area ${file ? 'has-file' : ''} ${isDragging ? 'drag-over' : ''}`}
         onClick={() => primaryRef.current?.click()}
+        onDragOver={(e) => handleDragOver(e, setIsDragging)}
+        onDragLeave={(e) => handleDragLeave(e, setIsDragging)}
+        onDrop={(e) => handleDrop(e, setIsDragging, setFile)}
         style={{ position: 'relative', overflow: 'hidden' }}
       >
         <UploadCloud className="file-drop-icon" size={28} />
@@ -83,8 +111,11 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
       </div>
 
       <div 
-        className={`file-drop-area ${auxFile ? 'has-file' : ''}`}
+        className={`file-drop-area ${auxFile ? 'has-file' : ''} ${isAuxDragging ? 'drag-over' : ''}`}
         onClick={() => auxRef.current?.click()}
+        onDragOver={(e) => handleDragOver(e, setIsAuxDragging)}
+        onDragLeave={(e) => handleDragLeave(e, setIsAuxDragging)}
+        onDrop={(e) => handleDrop(e, setIsAuxDragging, setAuxFile)}
         style={{ marginTop: '12px', minHeight: '80px', padding: '12px', position: 'relative', overflow: 'hidden' }}
       >
         {auxFile ? (
