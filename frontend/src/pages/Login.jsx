@@ -27,11 +27,11 @@ export default function Login() {
       {error && <div style={{ color: 'var(--accent)', background: 'rgba(255, 71, 87, 0.1)', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>{error}</div>}
       <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <input 
+          type="text"
           placeholder="Username" 
           value={username} 
           onChange={e => setUsername(e.target.value)} 
           required 
-          style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }}
         />
         <input 
           type="password" 
@@ -39,9 +39,8 @@ export default function Login() {
           value={password} 
           onChange={e => setPassword(e.target.value)} 
           required 
-          style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }}
         />
-        <button type="submit" className="button" style={{ marginTop: '8px' }}>Log In</button>
+        <button type="submit" className="btn-primary" style={{ marginTop: '8px' }}>Log In</button>
       </form>
       <p style={{ marginTop: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
         Don't have an account? <Link to="/register" style={{ color: 'var(--primary)', textDecoration: 'none' }}>Register</Link>
