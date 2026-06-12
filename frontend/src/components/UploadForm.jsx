@@ -52,7 +52,7 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
         <input 
           type="file" 
           accept=".gpx" 
-          style={{ display: 'none' }} 
+          style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }} 
           onChange={handleFileChange}
         />
       </label>
@@ -69,7 +69,7 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
         <input 
           type="file" 
           accept=".gpx" 
-          style={{ display: 'none' }} 
+          style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }} 
           onChange={handleAuxFileChange}
         />
       </label>
