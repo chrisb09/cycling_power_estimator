@@ -41,6 +41,15 @@ export const fetchRides = async () => {
   return response.json();
 };
 
+export const fetchRideAnalysis = async (rideId) => {
+  const response = await fetch(`${API_BASE}/rides/${rideId}/analyze`, { headers: getHeaders() });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to fetch ride analysis');
+  }
+  return response.json();
+};
+
 export const fetchBikes = async () => {
   const response = await fetch(`${API_BASE}/bikes/`, { headers: getHeaders() });
   if (!response.ok) throw new Error('Failed to fetch bikes');

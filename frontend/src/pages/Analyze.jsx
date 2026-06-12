@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import UploadForm from '../components/UploadForm';
 import StatsSummary from '../components/StatsSummary';
 import RideHeader from '../components/RideHeader';
 import RideChart from '../components/RideChart';
 import Histograms from '../components/Histograms';
-import { analyzeRide } from '../api/client';
+import { analyzeRide, fetchRideAnalysis } from '../api/client';
 import { Activity, Settings, X } from 'lucide-react';
 
 function Analyze() {
@@ -14,6 +15,24 @@ function Analyze() {
   const [showModal, setShowModal] = useState(false);
   const [currentFile, setCurrentFile] = useState(null);
   const [currentParams, setCurrentParams] = useState(null);
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const rideId = searchParams.get('ride_id');
+    if (rideId) {
+      setLoading(true);
+      fetchRideAnalysis(rideId)
+        .then(res => {
+          setData(res);
+          setCurrentParams(res.params);
+          setLoading(false);
+        })
+        .catch(err => {
+          setError(err.message);
+          setLoading(false);
+        });
+    }
+  }, [searchParams]);
 
   const handleAnalyze = async (file, params, auxFile = null) => {
     if (file === currentFile && JSON.stringify(params) === JSON.stringify(currentParams) && data && !auxFile) {
