@@ -58,9 +58,13 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
         <input 
           type="file" 
           accept=".gpx" 
-          style={{ display: 'none' }} 
+          style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0 }} 
           ref={fileInputRef}
-          onChange={handleFileChange}
+          onChange={(e) => {
+            e.stopPropagation();
+            handleFileChange(e);
+          }}
+          onClick={(e) => e.stopPropagation()}
         />
       </div>
 
@@ -80,9 +84,13 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
         <input 
           type="file" 
           accept=".gpx" 
-          style={{ display: 'none' }} 
+          style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0 }} 
           ref={auxFileInputRef}
-          onChange={handleAuxFileChange}
+          onChange={(e) => {
+            e.stopPropagation();
+            handleAuxFileChange(e);
+          }}
+          onClick={(e) => e.stopPropagation()}
         />
       </div>
 
@@ -133,7 +141,7 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
         disabled={!file || isLoading}
         style={{ width: '100%', marginTop: '16px' }}
       >
-        {isLoading ? <div className="spinner" /> : "Calculate Power"}
+        {isLoading ? <div className="spinner" /> : "Upload & Calculate Power"}
       </button>
     </form>
   );
