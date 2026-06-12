@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
-from passlib.context import CryptContext
+import bcrypt
 import jwt
 
 # Secret key for signing JWTs. In production, this should be an environment variable!
@@ -8,13 +8,17 @@ SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "super-secret-development-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 def verify_password(plain_password: str, hashed_password: str):
-    return pwd_context.verify(plain_password[:72], hashed_password)
+    return bcrypt.checkpw(
+        plain_password.encode('utf-8'), 
+        hashed_password.encode('utf-8')
+    )
 
 def get_password_hash(password: str):
-    return pwd_context.hash(password[:72])
+    return bcrypt.hashpw(
+        password.encode('utf-8'), 
+        bcrypt.gensalt()
+    ).decode('utf-8')
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
