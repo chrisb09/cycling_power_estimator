@@ -6,6 +6,14 @@ import urllib.request
 import json
 import asyncio
 from typing import Optional
+import os
+import uuid
+
+from sqlalchemy.orm import Session
+from fastapi import Depends
+from app.db.database import get_db
+from app.db.models import Ride, User
+from app.api.auth import get_current_user_optional
 
 from app.physics.gpx_parser import parse_gpx
 from app.physics.pipeline import compute_ride, RideParams, haversine_m
@@ -120,7 +128,9 @@ async def analyze_ride(
     bike_kg: float = Form(10.0),
     tires: str = Form("commuter"),
     position: str = Form("hoods"),
-    drivetrain: str = Form("average")
+    drivetrain: str = Form("average"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     if not file.filename.endswith(".gpx"):
         raise HTTPException(status_code=400, detail="File must be a GPX file")
@@ -155,6 +165,27 @@ async def analyze_ride(
         
         # Pass device from GPX
         summary["device"] = df.attrs.get("creator", "Unknown Device")
+        
+        # Save the GPX file persistently
+        os.makedirs("storage/gpx", exist_ok=True)
+        file_id = str(uuid.uuid4())
+        gpx_path = f"storage/gpx/{file_id}_{file.filename}"
+        with open(gpx_path, "wb") as f:
+            f.write(content)
+            
+        # Log the ride in the database if the user is authenticated
+        if current_user:
+            ride_record = Ride(
+                user_id=current_user.id,
+                name=file.filename.replace(".gpx", ""),
+                gpx_file_path=gpx_path,
+                riding_position=position,
+                avg_power_watts=summary["avg_power"],
+                normalized_power_watts=summary["np"],
+                total_work_kj=summary["total_kj"]
+            )
+            db.add(ride_record)
+            db.commit()
         
         # Get start location
         loc = await fetch_location(computed_df["lat"].iloc[0], computed_df["lon"].iloc[0])
