@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import UploadForm from './components/UploadForm';
-import StatsSummary from './components/StatsSummary';
-import RideHeader from './components/RideHeader';
-import RideChart from './components/RideChart';
-import Histograms from './components/Histograms';
-import { analyzeRide } from './api/client';
+import UploadForm from '../components/UploadForm';
+import StatsSummary from '../components/StatsSummary';
+import RideHeader from '../components/RideHeader';
+import RideChart from '../components/RideChart';
+import Histograms from '../components/Histograms';
+import { analyzeRide } from '../api/client';
 import { Activity, Settings, X } from 'lucide-react';
 
 function Analyze() {
