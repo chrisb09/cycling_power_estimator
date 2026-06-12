@@ -46,9 +46,12 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
           {rides.map(r => (
             <div key={r.id} className="glass-panel hover-scale" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.2rem', color: 'var(--primary)' }}>{r.name}</h3>
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{new Date(r.date).toLocaleDateString()}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.2rem', color: 'var(--primary)' }}>{r.name}</h3>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{new Date(r.date).toLocaleDateString()}</span>
+                </div>
+                <Link to={`/analyze?ride_id=${r.id}`} className="button" style={{ padding: '6px 12px', fontSize: '0.85rem', textDecoration: 'none' }}>View</Link>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
