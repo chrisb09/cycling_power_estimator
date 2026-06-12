@@ -28,11 +28,11 @@ export default function Register() {
       {error && <div style={{ color: 'var(--accent)', background: 'rgba(255, 71, 87, 0.1)', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>{error}</div>}
       <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <input 
+          type="text"
           placeholder="Username" 
           value={username} 
           onChange={e => setUsername(e.target.value)} 
           required 
-          style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }}
         />
         <input 
           type="password" 
@@ -40,7 +40,6 @@ export default function Register() {
           value={password} 
           onChange={e => setPassword(e.target.value)} 
           required 
-          style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }}
         />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Body Weight (kg)</label>
@@ -50,10 +49,9 @@ export default function Register() {
               value={weightKg} 
               onChange={e => setWeightKg(e.target.value)} 
               required 
-              style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }}
             />
         </div>
-        <button type="submit" className="button" style={{ marginTop: '8px' }}>Register</button>
+        <button type="submit" className="btn-primary" style={{ marginTop: '8px' }}>Register</button>
       </form>
       <p style={{ marginTop: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
         Already have an account? <Link to="/login" style={{ color: 'var(--primary)', textDecoration: 'none' }}>Log in</Link>
