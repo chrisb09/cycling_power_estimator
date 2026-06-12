@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { UploadCloud, Bike, Weight, Settings } from 'lucide-react';
 
 export default function UploadForm({ onAnalyze, isLoading, initialFile = null, initialParams = null }) {
@@ -18,39 +18,62 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
   const primaryRef = useRef(null);
   const auxRef = useRef(null);
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
-    }
-  };
-
-  const handleAuxFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setAuxFile(e.target.files[0]);
-    }
-  };
-
-  const handleDragOver = (e, setDragging) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragging(true);
-  };
-
-  const handleDragLeave = (e, setDragging) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragging(false);
-  };
-
-  const handleDrop = (e, setDragging, setter) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragging(false);
+  // Use NATIVE event listeners for maximum resilience against OS/Browser integration bugs
+  useEffect(() => {
+    const el = primaryRef.current;
+    if (!el) return;
     
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setter(e.dataTransfer.files[0]);
-    }
-  };
+    const handleChange = (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        setFile(e.target.files[0]);
+      }
+      setIsDragging(false);
+    };
+    
+    const handleDragEnter = () => setIsDragging(true);
+    const handleDragLeave = () => setIsDragging(false);
+    const handleDrop = () => setIsDragging(false);
+
+    el.addEventListener('change', handleChange);
+    el.addEventListener('dragenter', handleDragEnter);
+    el.addEventListener('dragleave', handleDragLeave);
+    el.addEventListener('drop', handleDrop);
+    
+    return () => {
+      el.removeEventListener('change', handleChange);
+      el.removeEventListener('dragenter', handleDragEnter);
+      el.removeEventListener('dragleave', handleDragLeave);
+      el.removeEventListener('drop', handleDrop);
+    };
+  }, []);
+
+  useEffect(() => {
+    const el = auxRef.current;
+    if (!el) return;
+    
+    const handleChange = (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        setAuxFile(e.target.files[0]);
+      }
+      setIsAuxDragging(false);
+    };
+    
+    const handleDragEnter = () => setIsAuxDragging(true);
+    const handleDragLeave = () => setIsAuxDragging(false);
+    const handleDrop = () => setIsAuxDragging(false);
+
+    el.addEventListener('change', handleChange);
+    el.addEventListener('dragenter', handleDragEnter);
+    el.addEventListener('dragleave', handleDragLeave);
+    el.addEventListener('drop', handleDrop);
+    
+    return () => {
+      el.removeEventListener('change', handleChange);
+      el.removeEventListener('dragenter', handleDragEnter);
+      el.removeEventListener('dragleave', handleDragLeave);
+      el.removeEventListener('drop', handleDrop);
+    };
+  }, []);
 
   const handleParamChange = (e) => {
     const { name, value } = e.target;
@@ -72,47 +95,39 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
       
       <div 
         className={`file-drop-area ${file ? 'has-file' : ''} ${isDragging ? 'drag-over' : ''}`}
-        onDragOver={(e) => handleDragOver(e, setIsDragging)}
-        onDragLeave={(e) => handleDragLeave(e, setIsDragging)}
-        onDrop={(e) => handleDrop(e, setIsDragging, setFile)}
         style={{ position: 'relative', overflow: 'hidden' }}
       >
         <UploadCloud className="file-drop-icon" size={28} />
         {file ? (
-          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0 }}>{file.name}</p>
+          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0, color: 'var(--accent)' }}>Loaded: {file.name}</p>
         ) : (
           <p style={{ fontSize: '0.9rem', margin: 0, color: 'var(--text-secondary)' }}>Click or drag to upload GPX file</p>
         )}
         <input 
-          type="file" 
-          accept=".gpx" 
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} 
           ref={primaryRef}
-          onChange={handleFileChange}
+          type="file" 
+          accept=".gpx"
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }} 
         />
       </div>
 
       <div 
         className={`file-drop-area ${auxFile ? 'has-file' : ''} ${isAuxDragging ? 'drag-over' : ''}`}
-        onDragOver={(e) => handleDragOver(e, setIsAuxDragging)}
-        onDragLeave={(e) => handleDragLeave(e, setIsAuxDragging)}
-        onDrop={(e) => handleDrop(e, setIsAuxDragging, setAuxFile)}
         style={{ marginTop: '12px', minHeight: '80px', padding: '12px', position: 'relative', overflow: 'hidden' }}
       >
         {auxFile ? (
-          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0 }}>{auxFile.name}</p>
+          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0, color: 'var(--accent)' }}>Loaded: {auxFile.name}</p>
         ) : (
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontSize: '0.85rem', margin: '0 0 4px 0', color: 'var(--text-secondary)' }}><strong style={{ color: 'var(--text-primary)' }}>Optional:</strong> Upload a secondary GPX file</p>
-            <p style={{ fontSize: '0.75rem', margin: 0, color: 'var(--text-secondary)', opacity: 0.8 }}>If your primary file is missing altitude, we will automatically extract the elevation data from this file by aligning the GPS trajectories.</p>
+            <p style={{ fontSize: '0.75rem', margin: 0, color: 'var(--text-secondary)', opacity: 0.8 }}>If your primary file is missing altitude, we will automatically extract the elevation data from this file.</p>
           </div>
         )}
         <input 
-          type="file" 
-          accept=".gpx" 
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} 
           ref={auxRef}
-          onChange={handleAuxFileChange}
+          type="file" 
+          accept=".gpx"
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }} 
         />
       </div>
 
