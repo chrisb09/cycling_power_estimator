@@ -72,10 +72,10 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
       
       <div 
         className={`file-drop-area ${file ? 'has-file' : ''} ${isDragging ? 'drag-over' : ''}`}
-        onClick={() => primaryRef.current?.click()}
         onDragOver={(e) => handleDragOver(e, setIsDragging)}
         onDragLeave={(e) => handleDragLeave(e, setIsDragging)}
         onDrop={(e) => handleDrop(e, setIsDragging, setFile)}
+        style={{ position: 'relative', overflow: 'hidden' }}
       >
         <UploadCloud className="file-drop-icon" size={28} />
         {file ? (
@@ -86,7 +86,7 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
         <input 
           type="file" 
           accept=".gpx" 
-          style={{ display: 'none' }} 
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} 
           ref={primaryRef}
           onChange={handleFileChange}
         />
@@ -94,11 +94,10 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
 
       <div 
         className={`file-drop-area ${auxFile ? 'has-file' : ''} ${isAuxDragging ? 'drag-over' : ''}`}
-        onClick={() => auxRef.current?.click()}
         onDragOver={(e) => handleDragOver(e, setIsAuxDragging)}
         onDragLeave={(e) => handleDragLeave(e, setIsAuxDragging)}
         onDrop={(e) => handleDrop(e, setIsAuxDragging, setAuxFile)}
-        style={{ marginTop: '12px', minHeight: '80px', padding: '12px' }}
+        style={{ marginTop: '12px', minHeight: '80px', padding: '12px', position: 'relative', overflow: 'hidden' }}
       >
         {auxFile ? (
           <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0 }}>{auxFile.name}</p>
@@ -111,7 +110,7 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
         <input 
           type="file" 
           accept=".gpx" 
-          style={{ display: 'none' }} 
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} 
           ref={auxRef}
           onChange={handleAuxFileChange}
         />
