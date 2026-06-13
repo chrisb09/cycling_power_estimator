@@ -44,6 +44,19 @@ def delete_ride(ride_id: int, db: Session = Depends(get_db), current_user: User 
     db.commit()
     return {"status": "success"}
 
+class RideRenameRequest(BaseModel):
+    name: str
+
+@router.patch("/{ride_id}")
+def rename_ride(ride_id: int, payload: RideRenameRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    ride = db.query(Ride).filter(Ride.id == ride_id, Ride.user_id == current_user.id).first()
+    if not ride:
+        raise HTTPException(status_code=404, detail="Ride not found")
+        
+    ride.name = payload.name
+    db.commit()
+    return {"status": "success", "name": ride.name}
+
 @router.get("/{ride_id}/analyze")
 async def analyze_saved_ride(ride_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     ride = db.query(Ride).filter(Ride.id == ride_id, Ride.user_id == current_user.id).first()

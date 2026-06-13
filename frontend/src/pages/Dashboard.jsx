@@ -1,20 +1,18 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchRides } from '../api/client';
+import { fetchRides, deleteRide, renameRide } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
-import { Activity, Zap, Map } from 'lucide-react';
+import { Activity, Zap, Map, Edit2, Trash2 } from 'lucide-react';
 
 export default function Dashboard() {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState("");
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/login');
-      return;
-    }
+  const loadRides = () => {
     fetchRides().then(data => {
       setRides(data);
       setLoading(false);
@@ -22,7 +20,39 @@ export default function Dashboard() {
       console.error(err);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    loadRides();
   }, [token, navigate]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this ride?")) return;
+    try {
+      await deleteRide(id);
+      loadRides();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleRename = async (id) => {
+    if (!editName.trim()) {
+      setEditingId(null);
+      return;
+    }
+    try {
+      await renameRide(id, editName);
+      setEditingId(null);
+      loadRides();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
   return (
     <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
@@ -47,11 +77,43 @@ export default function Dashboard() {
           {rides.map(r => (
             <div key={r.id} className="glass-panel hover-scale" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <h3 style={{ margin: '0 0 8px 0', fontSize: '1.2rem', color: 'var(--primary)' }}>{r.name}</h3>
+                <div style={{ flex: 1, marginRight: '16px' }}>
+                  {editingId === r.id ? (
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                      <input 
+                        type="text" 
+                        value={editName} 
+                        onChange={(e) => setEditName(e.target.value)} 
+                        style={{ padding: '4px 8px', fontSize: '1rem', width: '100%' }}
+                        autoFocus
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleRename(r.id); else if (e.key === 'Escape') setEditingId(null); }}
+                      />
+                      <button onClick={() => handleRename(r.id)} className="button" style={{ padding: '4px 12px' }}>Save</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--primary)' }}>{r.name}</h3>
+                      <button 
+                        onClick={() => { setEditingId(r.id); setEditName(r.name); }} 
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px' }}
+                        title="Rename"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                    </div>
+                  )}
                   <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{new Date(r.date).toLocaleDateString()}</span>
                 </div>
-                <Link to={`/analyze?ride_id=${r.id}`} className="button" style={{ padding: '6px 12px', fontSize: '0.85rem', textDecoration: 'none' }}>View</Link>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    onClick={() => handleDelete(r.id)} 
+                    style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    title="Delete Ride"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                  <Link to={`/analyze?ride_id=${r.id}`} className="button" style={{ padding: '6px 12px', fontSize: '0.85rem', textDecoration: 'none' }}>View</Link>
+                </div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
