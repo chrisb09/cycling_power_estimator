@@ -180,9 +180,9 @@ async def analyze_ride(
                 name=file.filename.replace(".gpx", ""),
                 gpx_file_path=gpx_path,
                 riding_position=position,
-                avg_power_watts=summary["avg_power"],
-                normalized_power_watts=summary["np"],
-                total_work_kj=summary["total_kj"]
+                avg_power_watts=summary["avg_power_w"],
+                normalized_power_watts=summary["normalized_power_w"],
+                total_work_kj=summary["total_work_kj"]
             )
             db.add(ride_record)
             db.commit()
