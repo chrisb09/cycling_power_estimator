@@ -173,6 +173,10 @@ async def analyze_ride(
         with open(gpx_path, "wb") as f:
             f.write(content)
             
+        # Get start location
+        loc = await fetch_location(computed_df["lat"].iloc[0], computed_df["lon"].iloc[0])
+        summary["location"] = loc
+
         # Log the ride in the database if the user is authenticated
         if current_user:
             ride_record = Ride(
@@ -182,14 +186,13 @@ async def analyze_ride(
                 riding_position=position,
                 avg_power_watts=summary["avg_power_w"],
                 normalized_power_watts=summary["normalized_power_w"],
-                total_work_kj=summary["total_work_kj"]
+                total_work_kj=summary["total_work_kj"],
+                distance_km=summary["distance_km"],
+                moving_time_s=summary["moving_time_s"],
+                location=summary["location"]
             )
             db.add(ride_record)
             db.commit()
-        
-        # Get start location
-        loc = await fetch_location(computed_df["lat"].iloc[0], computed_df["lon"].iloc[0])
-        summary["location"] = loc
         
         # Add cumulative time for frontend tooltips
         computed_df["time_s"] = computed_df["dt_s"].cumsum()
