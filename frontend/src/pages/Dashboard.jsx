@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchRides, deleteRide, renameRide } from '../api/client';
+import { fetchRides, deleteRide, updateRide } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
-import { Activity, Zap, Map, Edit2, Trash2, Clock, Navigation } from 'lucide-react';
+import { Activity, Zap, Map, Edit2, Trash2, Clock, Navigation, Eye, EyeOff, Link as LinkIcon, Share2 } from 'lucide-react';
 
 export default function Dashboard() {
   const [rides, setRides] = useState([]);
@@ -46,12 +46,37 @@ export default function Dashboard() {
       return;
     }
     try {
-      await renameRide(id, editName);
+      await updateRide(id, { name: editName });
       setEditingId(null);
       loadRides();
     } catch (err) {
       alert(err.message);
     }
+  };
+
+  const handleToggleVisibility = async (id, currentVis) => {
+    const nextVis = currentVis === 'private' ? 'unlisted' : currentVis === 'unlisted' ? 'public' : 'private';
+    try {
+      await updateRide(id, { visibility: nextVis });
+      loadRides();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleGenerateShareToken = async (id) => {
+    try {
+      await updateRide(id, { generate_token: true });
+      loadRides();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const copyShareLink = (rideId, token) => {
+    const url = `${window.location.origin}/analyze?ride_id=${rideId}&token=${token}`;
+    navigator.clipboard.writeText(url);
+    alert("Share link copied to clipboard!");
   };
 
   const formatDuration = (seconds) => {
@@ -121,7 +146,14 @@ export default function Dashboard() {
                     <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{new Date(r.date).toLocaleDateString()}</span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleToggleVisibility(r.id, r.visibility); }} 
+                    style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}
+                    title={`Visibility: ${r.visibility}`}
+                  >
+                    {r.visibility === 'public' ? <Eye size={16} color="var(--primary)" /> : r.visibility === 'unlisted' ? <LinkIcon size={16} /> : <EyeOff size={16} />}
+                  </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }} 
                     style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}
@@ -132,7 +164,24 @@ export default function Dashboard() {
                 </div>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              {r.visibility === 'private' && (
+                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', marginTop: '4px' }} onClick={e => e.stopPropagation()}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Private Ride</span>
+                    {r.share_token ? (
+                      <button onClick={() => copyShareLink(r.id, r.share_token)} className="button" style={{ fontSize: '0.75rem', padding: '4px 8px', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                        <Share2 size={12} /> Copy Share Link
+                      </button>
+                    ) : (
+                      <button onClick={() => handleGenerateShareToken(r.id)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}>
+                        Create secret link
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Zap size={18} color="var(--accent)" />
                   <div>

@@ -1,9 +1,15 @@
 pyproject.toml
 app/__init__.py
+app/auth.py
 app/cli.py
 app/main.py
 app/api/__init__.py
 app/api/analyze.py
+app/api/auth.py
+app/api/bikes.py
+app/api/rides.py
+app/db/database.py
+app/db/models.py
 app/physics/__init__.py
 app/physics/constants.py
 app/physics/gpx_parser.py

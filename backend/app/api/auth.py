@@ -14,6 +14,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login", auto_error=False)
 class UserCreate(BaseModel):
     username: str
     password: str
+    invite_key: str
     weight_kg: float = 75.0
     height_cm: float = 175.0
 
@@ -41,10 +42,23 @@ def get_current_user(user: User = Depends(get_current_user_optional)):
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account disabled")
+    return user
+
+def admin_required(user: User = Depends(get_current_user)):
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
     return user
 
 @router.post("/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(get_db)):
+    # Validate Invite Key
+    from app.db.models import InviteKey
+    key_record = db.query(InviteKey).filter(InviteKey.key == user.invite_key, InviteKey.is_used == 0).first()
+    if not key_record:
+        raise HTTPException(status_code=400, detail="Invalid or expired invite key")
+
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
@@ -54,11 +68,18 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         username=user.username,
         password_hash=hashed_password,
         weight_kg=user.weight_kg,
-        height_cm=user.height_cm
+        height_cm=user.height_cm,
+        role="user",
+        is_active=1
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    
+    # Mark invite key as used
+    key_record.is_used = 1
+    key_record.used_by = new_user.id
+    db.commit()
     
     access_token = create_access_token(data={"sub": new_user.username})
     return {"access_token": access_token, "token_type": "bearer"}
@@ -72,5 +93,37 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account disabled")
+        
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    weight_kg: float
+    height_cm: float
+    role: str
+    is_active: int
+
+    class Config:
+        from_attributes = True
+
+@router.get("/me", response_model=UserResponse)
+def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+class UserSettingsUpdate(BaseModel):
+    weight_kg: float | None = None
+    height_cm: float | None = None
+
+@router.patch("/me", response_model=UserResponse)
+def update_me(payload: UserSettingsUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if payload.weight_kg is not None:
+        current_user.weight_kg = payload.weight_kg
+    if payload.height_cm is not None:
+        current_user.height_cm = payload.height_cm
+    db.commit()
+    db.refresh(current_user)
+    return current_user
