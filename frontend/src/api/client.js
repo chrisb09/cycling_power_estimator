@@ -35,6 +35,12 @@ export const registerUser = async (data) => {
   return response.json();
 };
 
+export const fetchInviteDetails = async (key) => {
+  const response = await fetch(`${API_BASE}/invites/${key}`);
+  if (!response.ok) throw new Error('Invite key not found or invalid');
+  return response.json();
+};
+
 export const fetchMe = async () => {
   const response = await fetch(`${API_BASE}/me`, { headers: getHeaders() });
   if (!response.ok) throw new Error('Failed to fetch user data');
@@ -48,6 +54,19 @@ export const updateMe = async (data) => {
     body: JSON.stringify(data)
   });
   if (!response.ok) throw new Error('Failed to update user data');
+  return response.json();
+};
+
+export const selfPromote = async (code) => {
+  const response = await fetch(`${API_BASE}/admin/self-promote`, {
+    method: 'POST',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ admin_code: code })
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.detail || 'Promotion failed');
+  }
   return response.json();
 };
 
@@ -77,8 +96,8 @@ export const updateRide = async (rideId, data) => {
 };
 
 export const fetchPublicRides = async (username) => {
-  const response = await fetch(`${API_BASE}/rides/user/${username}`);
-  if (!response.ok) throw new Error('Failed to fetch public rides');
+  const response = await fetch(`${API_BASE}/rides/user/${username}`, { headers: getHeaders() });
+  if (!response.ok) throw new Error('Failed to fetch public rides or profile is private');
   return response.json();
 };
 

@@ -106,6 +106,8 @@ class UserResponse(BaseModel):
     height_cm: float
     role: str
     is_active: int
+    default_ride_visibility: str
+    profile_visibility: str
 
     class Config:
         from_attributes = True
@@ -117,6 +119,8 @@ def get_me(current_user: User = Depends(get_current_user)):
 class UserSettingsUpdate(BaseModel):
     weight_kg: float | None = None
     height_cm: float | None = None
+    default_ride_visibility: str | None = None
+    profile_visibility: str | None = None
 
 @router.patch("/me", response_model=UserResponse)
 def update_me(payload: UserSettingsUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -124,6 +128,28 @@ def update_me(payload: UserSettingsUpdate, db: Session = Depends(get_db), curren
         current_user.weight_kg = payload.weight_kg
     if payload.height_cm is not None:
         current_user.height_cm = payload.height_cm
+    if payload.default_ride_visibility is not None:
+        current_user.default_ride_visibility = payload.default_ride_visibility
+    if payload.profile_visibility is not None:
+        current_user.profile_visibility = payload.profile_visibility
     db.commit()
     db.refresh(current_user)
     return current_user
+
+class InviteDetailsResponse(BaseModel):
+    key: str
+    creator_username: str
+    is_used: int
+
+@router.get("/invites/{key}", response_model=InviteDetailsResponse)
+def get_invite_details(key: str, db: Session = Depends(get_db)):
+    from app.db.models import InviteKey
+    key_record = db.query(InviteKey).filter(InviteKey.key == key).first()
+    if not key_record:
+        raise HTTPException(status_code=404, detail="Invite key not found")
+    creator = db.query(User).filter(User.id == key_record.created_by).first()
+    return {
+        "key": key_record.key,
+        "creator_username": creator.username if creator else "Admin",
+        "is_used": key_record.is_used
+    }

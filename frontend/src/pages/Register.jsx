@@ -1,17 +1,33 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { registerUser } from '../api/client';
+import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { registerUser, fetchInviteDetails } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 
 export default function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [inviteKey, setInviteKey] = useState('');
+  const [inviteCreator, setInviteCreator] = useState(null);
   const [weightKg, setWeightKg] = useState(75.0);
   const [heightCm, setHeightCm] = useState(175.0);
   const [error, setError] = useState(null);
   const { setToken } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const key = searchParams.get('key');
+    if (key) {
+      setInviteKey(key);
+      fetchInviteDetails(key)
+        .then(data => {
+          if (!data.is_used) {
+            setInviteCreator(data.creator_username);
+          }
+        })
+        .catch(err => console.error("Failed to load invite details", err));
+    }
+  }, [searchParams]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -45,6 +61,11 @@ export default function Register() {
         />
         <div className="form-group" style={{ marginBottom: '20px' }}>
             <label>Invite Key</label>
+            {inviteCreator && (
+              <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '6px 12px', borderRadius: '4px' }}>
+                You have received an invite key from <strong>{inviteCreator}</strong>
+              </p>
+            )}
             <input 
               type="text" 
               value={inviteKey} 

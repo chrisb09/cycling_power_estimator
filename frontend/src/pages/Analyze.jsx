@@ -19,9 +19,10 @@ function Analyze() {
 
   useEffect(() => {
     const rideId = searchParams.get('ride_id');
+    const token = searchParams.get('token');
     if (rideId) {
       setLoading(true);
-      fetchRideAnalysis(rideId)
+      fetchRideAnalysis(rideId, token)
         .then(res => {
           setData(res);
           setCurrentParams(res.params);

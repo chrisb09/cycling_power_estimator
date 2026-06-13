@@ -39,6 +39,11 @@ export default function RideHeader({ summary, params, onEdit }) {
               Recorded on {summary.device}
             </span>
           )}
+          {summary.rider_username && summary.rider_username !== 'Unknown' && (
+            <a href={`/profile/${summary.rider_username}`} style={{ fontSize: '0.85rem', color: 'var(--primary)', textDecoration: 'none', marginLeft: 'auto', border: '1px solid var(--primary)', padding: '4px 8px', borderRadius: '4px' }}>
+              Rider Profile: {summary.rider_username}
+            </a>
+          )}
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

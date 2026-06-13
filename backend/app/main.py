@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import analyze, auth, bikes, rides, admin
 from app.db.database import engine, Base
@@ -6,7 +7,15 @@ from app.db.database import engine, Base
 # Create all database tables (if they don't exist yet)
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Cycling Power Estimator")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from app.api.admin import ADMIN_CODE
+    print("\n" + "="*50)
+    print(f"ADMIN CODE FOR SELF-PROMOTION: {ADMIN_CODE}")
+    print("="*50 + "\n")
+    yield
+
+app = FastAPI(title="Cycling Power Estimator", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
