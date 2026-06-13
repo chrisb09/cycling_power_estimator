@@ -41,6 +41,25 @@ export const fetchRides = async () => {
   return response.json();
 };
 
+export const deleteRide = async (rideId) => {
+  const response = await fetch(`${API_BASE}/rides/${rideId}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  });
+  if (!response.ok) throw new Error('Failed to delete ride');
+  return response.json();
+};
+
+export const renameRide = async (rideId, newName) => {
+  const response = await fetch(`${API_BASE}/rides/${rideId}`, {
+    method: 'PATCH',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: newName })
+  });
+  if (!response.ok) throw new Error('Failed to rename ride');
+  return response.json();
+};
+
 export const fetchRideAnalysis = async (rideId) => {
   const response = await fetch(`${API_BASE}/rides/${rideId}/analyze`, { headers: getHeaders() });
   if (!response.ok) {
