@@ -8,8 +8,10 @@ from app.db.database import get_db
 from app.db.models import Ride, User
 from app.api.auth import get_current_user, get_current_user_optional
 import os
+import json
 
 router = APIRouter()
+CURRENT_ANALYSIS_VERSION = 1
 
 class RideResponse(BaseModel):
     id: int
@@ -72,11 +74,23 @@ def update_ride(ride_id: int, payload: RideUpdateRequest, db: Session = Depends(
     return ride
 
 @router.get("/user/{username}", response_model=List[RideResponse])
-def get_public_rides(username: str, db: Session = Depends(get_db)):
+def get_public_rides(username: str, db: Session = Depends(get_db), current_user: Optional[User] = Depends(get_current_user_optional)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
+    has_access = False
+    if user.profile_visibility == "public":
+        has_access = True
+    elif current_user:
+        if current_user.id == user.id or current_user.role == "admin":
+            has_access = True
+        elif user.profile_visibility == "internal":
+            has_access = True
+            
+    if not has_access:
+        raise HTTPException(status_code=403, detail="Profile is not public")
+
     rides = db.query(Ride).filter(Ride.user_id == user.id, Ride.visibility == "public").order_by(Ride.date.desc()).all()
     return rides
 
@@ -99,6 +113,12 @@ async def analyze_saved_ride(ride_id: int, token: Optional[str] = None, db: Sess
     if not has_access:
         raise HTTPException(status_code=403, detail="Not authorized to view this ride")
         
+    if ride.analysis_cache and ride.analysis_version == CURRENT_ANALYSIS_VERSION:
+        try:
+            return json.loads(ride.analysis_cache)
+        except Exception:
+            pass # Fallback to recomputing if JSON is corrupt
+            
     if not ride.gpx_file_path or not os.path.exists(ride.gpx_file_path):
         raise HTTPException(status_code=404, detail="GPX file missing from storage")
         
@@ -134,6 +154,10 @@ async def analyze_saved_ride(ride_id: int, token: Optional[str] = None, db: Sess
         computed_df = compute_ride(df, params)
         summary = summarize(computed_df)
         summary["device"] = df.attrs.get("creator", "Unknown Device")
+        
+        # Add rider username for profile linking
+        user = db.query(User).filter(User.id == ride.user_id).first()
+        summary["rider_username"] = user.username if user else "Unknown"
         
         loc = await fetch_location(computed_df["lat"].iloc[0], computed_df["lon"].iloc[0])
         summary["location"] = loc
@@ -217,12 +241,19 @@ async def analyze_saved_ride(ride_id: int, token: Optional[str] = None, db: Sess
                 return res
             histograms["hr_time"] = build_hr_histogram(hr_data["hr"], hr_data["dt_s"].clip(upper=10.0))
 
-        return JSONResponse(content={
+        response_data = {
             "summary": summary,
             "params": params.dict() if hasattr(params, 'dict') else vars(params),
             "points": points,
             "histograms": histograms
-        })
+        }
+        
+        # Save to cache
+        ride.analysis_cache = json.dumps(response_data)
+        ride.analysis_version = CURRENT_ANALYSIS_VERSION
+        db.commit()
+
+        return JSONResponse(content=response_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

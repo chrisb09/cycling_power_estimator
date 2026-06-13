@@ -1,10 +1,10 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { LogOut, Home, Upload, Settings, Shield } from 'lucide-react';
+import { LogOut, Home, Upload, Settings, Shield, User } from 'lucide-react';
 
 export default function Navbar() {
-  const { token, logout } = useContext(AuthContext);
+  const { token, logout, username } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -33,6 +33,9 @@ export default function Navbar() {
             </Link>
             <Link to="/dashboard" style={{ color: 'var(--text-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
               <Home size={18} style={{color: 'var(--primary)'}}/> Dashboard
+            </Link>
+            <Link to={`/profile/${username}`} style={{ color: 'var(--text-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
+              <User size={18} style={{color: 'var(--primary)'}}/> Profile
             </Link>
             <Link to="/settings" style={{ color: 'var(--text-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
               <Settings size={18} style={{color: 'var(--primary)'}}/> Settings

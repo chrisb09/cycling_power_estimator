@@ -6,9 +6,13 @@ import uuid
 
 from app.db.database import get_db
 from app.db.models import User, InviteKey
-from app.api.auth import admin_required, UserResponse
+from app.api.auth import admin_required, UserResponse, get_current_user
+import uuid
 
 router = APIRouter()
+
+# Global admin code generated at startup
+ADMIN_CODE = str(uuid.uuid4())
 
 class InviteKeyResponse(BaseModel):
     key: str
@@ -23,6 +27,18 @@ class InviteKeyResponse(BaseModel):
 def get_all_users(db: Session = Depends(get_db), current_admin: User = Depends(admin_required)):
     users = db.query(User).all()
     return users
+
+class SelfPromoteRequest(BaseModel):
+    admin_code: str
+
+@router.post("/self-promote", response_model=UserResponse)
+def self_promote(payload: SelfPromoteRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if payload.admin_code != ADMIN_CODE:
+        raise HTTPException(status_code=403, detail="Invalid admin code")
+    current_user.role = "admin"
+    db.commit()
+    db.refresh(current_user)
+    return current_user
 
 class UserRoleUpdate(BaseModel):
     role: str

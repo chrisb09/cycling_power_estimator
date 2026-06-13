@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchRides, deleteRide, updateRide } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
-import { Activity, Zap, Map, Edit2, Trash2, Clock, Navigation, Eye, EyeOff, Link as LinkIcon, Share2 } from 'lucide-react';
+import { Activity, Zap, Map, Edit2, Trash2, Clock, Navigation, Globe, Lock, Link as LinkIcon, Share2 } from 'lucide-react';
 
 export default function Dashboard() {
   const [rides, setRides] = useState([]);
@@ -64,19 +64,33 @@ export default function Dashboard() {
     }
   };
 
-  const handleGenerateShareToken = async (id) => {
-    try {
-      await updateRide(id, { generate_token: true });
-      loadRides();
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
   const copyShareLink = (rideId, token) => {
-    const url = `${window.location.origin}/analyze?ride_id=${rideId}&token=${token}`;
+    let url = `${window.location.origin}/analyze?ride_id=${rideId}`;
+    if (token) url += `&token=${token}`;
     navigator.clipboard.writeText(url);
     alert("Share link copied to clipboard!");
+  };
+
+  const handleShareClick = async (e, r) => {
+    e.stopPropagation();
+    if (r.visibility === 'private') {
+      if (r.share_token) {
+        copyShareLink(r.id, r.share_token);
+      } else {
+        try {
+          await updateRide(r.id, { generate_token: true });
+          // Fetch rides again to get the token, but we need it immediately.
+          // Wait, updateRide does not return the updated ride. It just returns success.
+          // I will just call loadRides() and alert the user to click again, or we can fetch it.
+          alert("Secret link generated! Please click share again to copy.");
+          loadRides();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+    } else {
+      copyShareLink(r.id, null);
+    }
   };
 
   const formatDuration = (seconds) => {
@@ -152,7 +166,14 @@ export default function Dashboard() {
                     style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}
                     title={`Visibility: ${r.visibility}`}
                   >
-                    {r.visibility === 'public' ? <Eye size={16} color="var(--primary)" /> : r.visibility === 'unlisted' ? <LinkIcon size={16} /> : <EyeOff size={16} />}
+                    {r.visibility === 'public' ? <Globe size={16} color="#10B981" /> : r.visibility === 'unlisted' ? <LinkIcon size={16} /> : <Lock size={16} />}
+                  </button>
+                  <button 
+                    onClick={(e) => handleShareClick(e, r)} 
+                    style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', color: 'var(--primary)', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}
+                    title="Copy Share Link"
+                  >
+                    <Share2 size={16} />
                   </button>
                   <button 
                     onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }} 
@@ -164,23 +185,6 @@ export default function Dashboard() {
                 </div>
               </div>
               
-              {r.visibility === 'private' && (
-                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', marginTop: '4px' }} onClick={e => e.stopPropagation()}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Private Ride</span>
-                    {r.share_token ? (
-                      <button onClick={() => copyShareLink(r.id, r.share_token)} className="button" style={{ fontSize: '0.75rem', padding: '4px 8px', display: 'flex', gap: '4px', alignItems: 'center' }}>
-                        <Share2 size={12} /> Copy Share Link
-                      </button>
-                    ) : (
-                      <button onClick={() => handleGenerateShareToken(r.id)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline' }}>
-                        Create secret link
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Zap size={18} color="var(--accent)" />

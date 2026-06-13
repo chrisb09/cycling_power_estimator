@@ -139,6 +139,19 @@ export default function AdminPanel() {
                   <td style={{ padding: '12px 0' }}>
                     {i.is_used ? <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Used by #{i.used_by}</span> : <span style={{ color: '#10B981', fontSize: '0.85rem', fontWeight: 600 }}>Active</span>}
                   </td>
+                  <td style={{ padding: '12px 0', textAlign: 'right' }}>
+                    {!i.is_used && (
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/register?key=${i.key}`);
+                          alert("Invite link copied!");
+                        }}
+                        style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '4px 8px', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.8rem' }}
+                      >
+                        Copy Link
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
               {invites.length === 0 && (

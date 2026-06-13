@@ -13,6 +13,8 @@ class User(Base):
     height_cm = Column(Float, default=175.0)
     role = Column(String, default="user") # 'admin', 'user'
     is_active = Column(Integer, default=1) # 1 for active, 0 for disabled
+    default_ride_visibility = Column(String, default="private") # 'private', 'unlisted', 'public'
+    profile_visibility = Column(String, default="public") # 'private', 'internal', 'public'
 
     bikes = relationship("Bike", back_populates="owner")
     rides = relationship("Ride", back_populates="rider")
@@ -54,6 +56,8 @@ class Ride(Base):
     riding_position = Column(String, default="hoods") # 'tops', 'hoods', 'drops', 'aero'
     visibility = Column(String, default="private") # 'private', 'unlisted', 'public'
     share_token = Column(String, nullable=True, unique=True, index=True)
+    analysis_version = Column(Integer, default=1)
+    analysis_cache = Column(String, nullable=True) # JSON dump of the analysis result
     
     # Pre-computed summary stats
     avg_power_watts = Column(Float)

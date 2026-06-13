@@ -1,5 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, Bike, Weight, Settings } from 'lucide-react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
+import { UploadCloud, Bike, Weight, Settings, Eye } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
+import { fetchMe } from '../api/client';
 
 export default function UploadForm({ onAnalyze, isLoading, initialFile = null, initialParams = null }) {
   const [file, setFile] = useState(initialFile);
@@ -9,14 +11,29 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
     bike_kg: 10.0,
     tires: 'commuter',
     position: 'hoods',
-    drivetrain: 'average'
+    drivetrain: 'average',
+    visibility: 'private'
   });
+  const { token } = useContext(AuthContext);
   
   const [isDragging, setIsDragging] = useState(false);
   const [isAuxDragging, setIsAuxDragging] = useState(false);
   
   const primaryRef = useRef(null);
   const auxRef = useRef(null);
+
+  useEffect(() => {
+    if (token && !initialParams) {
+      fetchMe().then(user => {
+        setParams(p => ({ 
+          ...p, 
+          rider_kg: user.weight_kg || p.rider_kg,
+          height_cm: user.height_cm || p.height_cm,
+          visibility: user.default_ride_visibility || 'private'
+        }));
+      }).catch(err => console.error("Failed to load user defaults", err));
+    }
+  }, [token, initialParams]);
 
   // Use NATIVE event listeners for maximum resilience against OS/Browser integration bugs
   useEffect(() => {
@@ -171,6 +188,17 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
           <option value="dirty">Dirty / Gritty (92%)</option>
         </select>
       </div>
+
+      {token && (
+        <div className="form-group" style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Eye size={14}/> Ride Visibility</label>
+          <select name="visibility" value={params.visibility} onChange={handleParamChange}>
+            <option value="public">Public (Visible on your profile)</option>
+            <option value="unlisted">Unlisted (Anyone with the link)</option>
+            <option value="private">Private (Only you & secret link)</option>
+          </select>
+        </div>
+      )}
 
       <button 
         type="submit" 

@@ -1,13 +1,16 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchMe, updateMe } from '../api/client';
+import { fetchMe, updateMe, selfPromote } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
-import { Settings, Save } from 'lucide-react';
+import { Settings, Save, Shield } from 'lucide-react';
 
 export default function UserSettings() {
   const [user, setUser] = useState(null);
   const [weight, setWeight] = useState(75.0);
   const [height, setHeight] = useState(175.0);
+  const [defaultRideVisibility, setDefaultRideVisibility] = useState('private');
+  const [profileVisibility, setProfileVisibility] = useState('public');
+  const [adminCode, setAdminCode] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -24,6 +27,8 @@ export default function UserSettings() {
         setUser(u);
         setWeight(u.weight_kg);
         setHeight(u.height_cm);
+        setDefaultRideVisibility(u.default_ride_visibility || 'private');
+        setProfileVisibility(u.profile_visibility || 'public');
         setLoading(false);
       })
       .catch(err => {
@@ -37,13 +42,31 @@ export default function UserSettings() {
     setSaving(true);
     setSuccess(false);
     try {
-      await updateMe({ weight_kg: parseFloat(weight), height_cm: parseFloat(height) });
+      await updateMe({ 
+        weight_kg: parseFloat(weight), 
+        height_cm: parseFloat(height),
+        default_ride_visibility: defaultRideVisibility,
+        profile_visibility: profileVisibility
+      });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       alert(err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSelfPromote = async (e) => {
+    e.preventDefault();
+    if (!adminCode.trim()) return;
+    try {
+      const updatedUser = await selfPromote(adminCode.trim());
+      setUser(updatedUser);
+      setAdminCode('');
+      alert("Successfully promoted to Admin!");
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -89,6 +112,33 @@ export default function UserSettings() {
             </div>
           </div>
 
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Profile Visibility</label>
+              <select 
+                value={profileVisibility} 
+                onChange={e => setProfileVisibility(e.target.value)} 
+                style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+              >
+                <option value="public">Public (Anyone)</option>
+                <option value="internal">Internal (Logged in users only)</option>
+                <option value="private">Private (Only me)</option>
+              </select>
+            </div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Default Ride Visibility</label>
+              <select 
+                value={defaultRideVisibility} 
+                onChange={e => setDefaultRideVisibility(e.target.value)} 
+                style={{ width: '100%', padding: '10px', background: 'var(--bg-dark)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+              >
+                <option value="public">Public</option>
+                <option value="unlisted">Unlisted</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+          </div>
+
           <button 
             type="submit" 
             className="btn-primary" 
@@ -101,6 +151,27 @@ export default function UserSettings() {
           {success && <div style={{ marginTop: '16px', textAlign: 'center', color: '#10B981', fontSize: '0.9rem' }}>Settings updated successfully!</div>}
         </form>
       </div>
+
+      {user.role !== 'admin' && (
+        <div className="glass-panel" style={{ padding: '32px', marginTop: '32px' }}>
+          <div style={{ marginBottom: '16px' }}>
+            <h3 style={{ margin: '0 0 8px 0', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Shield size={20} /> Self-Promotion
+            </h3>
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Enter the admin code from the server console to grant yourself administrator privileges.</p>
+          </div>
+          <form onSubmit={handleSelfPromote} style={{ display: 'flex', gap: '16px' }}>
+            <input 
+              type="text" 
+              value={adminCode}
+              onChange={e => setAdminCode(e.target.value)}
+              placeholder="Enter Admin Code"
+              style={{ flex: 1, padding: '10px' }}
+            />
+            <button type="submit" className="btn-primary" style={{ padding: '0 24px' }}>Promote Me</button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

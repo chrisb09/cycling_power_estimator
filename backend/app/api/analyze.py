@@ -129,6 +129,7 @@ async def analyze_ride(
     tires: str = Form("commuter"),
     position: str = Form("hoods"),
     drivetrain: str = Form("average"),
+    visibility: str = Form(None),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
@@ -179,6 +180,7 @@ async def analyze_ride(
 
         # Log the ride in the database if the user is authenticated
         if current_user:
+            final_visibility = visibility if visibility else current_user.default_ride_visibility
             ride_record = Ride(
                 user_id=current_user.id,
                 name=file.filename.replace(".gpx", ""),
@@ -189,7 +191,8 @@ async def analyze_ride(
                 total_work_kj=summary["total_work_kj"],
                 distance_km=summary["distance_km"],
                 moving_time_s=summary["moving_time_s"],
-                location=summary["location"]
+                location=summary["location"],
+                visibility=final_visibility
             )
             db.add(ride_record)
             db.commit()
