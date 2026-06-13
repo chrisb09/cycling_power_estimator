@@ -35,6 +35,22 @@ export const registerUser = async (data) => {
   return response.json();
 };
 
+export const fetchMe = async () => {
+  const response = await fetch(`${API_BASE}/me`, { headers: getHeaders() });
+  if (!response.ok) throw new Error('Failed to fetch user data');
+  return response.json();
+};
+
+export const updateMe = async (data) => {
+  const response = await fetch(`${API_BASE}/me`, {
+    method: 'PATCH',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) throw new Error('Failed to update user data');
+  return response.json();
+};
+
 export const fetchRides = async () => {
   const response = await fetch(`${API_BASE}/rides/`, { headers: getHeaders() });
   if (!response.ok) throw new Error('Failed to fetch rides');
@@ -50,22 +66,72 @@ export const deleteRide = async (rideId) => {
   return response.json();
 };
 
-export const renameRide = async (rideId, newName) => {
+export const updateRide = async (rideId, data) => {
   const response = await fetch(`${API_BASE}/rides/${rideId}`, {
     method: 'PATCH',
     headers: { ...getHeaders(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: newName })
+    body: JSON.stringify(data)
   });
-  if (!response.ok) throw new Error('Failed to rename ride');
+  if (!response.ok) throw new Error('Failed to update ride');
   return response.json();
 };
 
-export const fetchRideAnalysis = async (rideId) => {
-  const response = await fetch(`${API_BASE}/rides/${rideId}/analyze`, { headers: getHeaders() });
+export const fetchPublicRides = async (username) => {
+  const response = await fetch(`${API_BASE}/rides/user/${username}`);
+  if (!response.ok) throw new Error('Failed to fetch public rides');
+  return response.json();
+};
+
+export const fetchRideAnalysis = async (rideId, token = null) => {
+  const url = token ? `${API_BASE}/rides/${rideId}/analyze?token=${token}` : `${API_BASE}/rides/${rideId}/analyze`;
+  const headers = getHeaders(); // optional if anonymous
+  const response = await fetch(url, { headers });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.detail || 'Failed to fetch ride analysis');
   }
+  return response.json();
+};
+
+// Admin Endpoints
+export const adminFetchUsers = async () => {
+  const response = await fetch(`${API_BASE}/admin/users`, { headers: getHeaders() });
+  if (!response.ok) throw new Error('Failed to fetch users');
+  return response.json();
+};
+
+export const adminUpdateUserRole = async (userId, role) => {
+  const response = await fetch(`${API_BASE}/admin/users/${userId}/role`, {
+    method: 'PATCH',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role })
+  });
+  if (!response.ok) throw new Error('Failed to update role');
+  return response.json();
+};
+
+export const adminUpdateUserStatus = async (userId, is_active) => {
+  const response = await fetch(`${API_BASE}/admin/users/${userId}/status`, {
+    method: 'PATCH',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_active })
+  });
+  if (!response.ok) throw new Error('Failed to update status');
+  return response.json();
+};
+
+export const adminGenerateInvite = async () => {
+  const response = await fetch(`${API_BASE}/admin/invites`, {
+    method: 'POST',
+    headers: getHeaders()
+  });
+  if (!response.ok) throw new Error('Failed to generate invite');
+  return response.json();
+};
+
+export const adminFetchInvites = async () => {
+  const response = await fetch(`${API_BASE}/admin/invites`, { headers: getHeaders() });
+  if (!response.ok) throw new Error('Failed to fetch invites');
   return response.json();
 };
 

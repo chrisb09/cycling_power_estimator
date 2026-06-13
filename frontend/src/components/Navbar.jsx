@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { LogOut, Home, Upload } from 'lucide-react';
+import { LogOut, Home, Upload, Settings, Shield } from 'lucide-react';
 
 export default function Navbar() {
   const { token, logout } = useContext(AuthContext);
@@ -33,6 +33,12 @@ export default function Navbar() {
             </Link>
             <Link to="/dashboard" style={{ color: 'var(--text-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
               <Home size={18} style={{color: 'var(--primary)'}}/> Dashboard
+            </Link>
+            <Link to="/settings" style={{ color: 'var(--text-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
+              <Settings size={18} style={{color: 'var(--primary)'}}/> Settings
+            </Link>
+            <Link to="/admin" style={{ color: 'var(--text-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
+              <Shield size={18} style={{color: 'var(--primary)'}}/> Admin
             </Link>
             <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500, padding: 0 }}>
               <LogOut size={18} /> Logout

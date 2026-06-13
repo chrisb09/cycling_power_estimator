@@ -6,7 +6,9 @@ import { AuthContext } from '../context/AuthContext';
 export default function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteKey, setInviteKey] = useState('');
   const [weightKg, setWeightKg] = useState(75.0);
+  const [heightCm, setHeightCm] = useState(175.0);
   const [error, setError] = useState(null);
   const { setToken } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -14,7 +16,7 @@ export default function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      const data = await registerUser({ username, password, weight_kg: parseFloat(weightKg), height_cm: 175.0 });
+      const data = await registerUser({ username, password, invite_key: inviteKey, weight_kg: parseFloat(weightKg), height_cm: parseFloat(heightCm) });
       setToken(data.access_token);
       navigate('/dashboard');
     } catch (err) {
@@ -41,6 +43,17 @@ export default function Register() {
           onChange={e => setPassword(e.target.value)} 
           required 
         />
+        <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label>Invite Key</label>
+            <input 
+              type="text" 
+              value={inviteKey} 
+              onChange={e => setInviteKey(e.target.value)} 
+              required 
+              style={{ width: '100%', padding: '10px' }}
+              placeholder="INVITE-XXXXXXXX"
+            />
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Body Weight (kg)</label>
             <input 

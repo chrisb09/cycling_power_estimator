@@ -6,6 +6,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Analyze from './pages/Analyze';
+import AdminPanel from './pages/AdminPanel';
+import Profile from './pages/Profile';
+import UserSettings from './pages/UserSettings';
 
 function App() {
   return (
@@ -19,6 +22,9 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/analyze" element={<Analyze />} />
+            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/profile/:username" element={<Profile />} />
+            <Route path="/settings" element={<UserSettings />} />
           </Routes>
         </div>
       </BrowserRouter>

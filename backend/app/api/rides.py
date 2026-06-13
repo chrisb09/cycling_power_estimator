@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
+import uuid
 from app.db.database import get_db
 from app.db.models import Ride, User
-from app.api.auth import get_current_user
+from app.api.auth import get_current_user, get_current_user_optional
 import os
 
 router = APIRouter()
@@ -21,6 +22,8 @@ class RideResponse(BaseModel):
     distance_km: float | None = None
     moving_time_s: float | None = None
     location: str | None = None
+    visibility: str = "private"
+    share_token: str | None = None
 
     class Config:
         from_attributes = True
@@ -36,7 +39,6 @@ def delete_ride(ride_id: int, db: Session = Depends(get_db), current_user: User 
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
     
-    import os
     if ride.gpx_file_path and os.path.exists(ride.gpx_file_path):
         try:
             os.remove(ride.gpx_file_path)
@@ -47,24 +49,55 @@ def delete_ride(ride_id: int, db: Session = Depends(get_db), current_user: User 
     db.commit()
     return {"status": "success"}
 
-class RideRenameRequest(BaseModel):
-    name: str
+class RideUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    visibility: Optional[str] = None
+    generate_token: Optional[bool] = False
 
 @router.patch("/{ride_id}")
-def rename_ride(ride_id: int, payload: RideRenameRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def update_ride(ride_id: int, payload: RideUpdateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     ride = db.query(Ride).filter(Ride.id == ride_id, Ride.user_id == current_user.id).first()
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
         
-    ride.name = payload.name
+    if payload.name is not None:
+        ride.name = payload.name
+    if payload.visibility in ["private", "unlisted", "public"]:
+        ride.visibility = payload.visibility
+    if payload.generate_token:
+        ride.share_token = str(uuid.uuid4())
+        
     db.commit()
-    return {"status": "success", "name": ride.name}
+    db.refresh(ride)
+    return ride
+
+@router.get("/user/{username}", response_model=List[RideResponse])
+def get_public_rides(username: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    rides = db.query(Ride).filter(Ride.user_id == user.id, Ride.visibility == "public").order_by(Ride.date.desc()).all()
+    return rides
 
 @router.get("/{ride_id}/analyze")
-async def analyze_saved_ride(ride_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    ride = db.query(Ride).filter(Ride.id == ride_id, Ride.user_id == current_user.id).first()
+async def analyze_saved_ride(ride_id: int, token: Optional[str] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_optional)):
+    ride = db.query(Ride).filter(Ride.id == ride_id).first()
     if not ride:
         raise HTTPException(status_code=404, detail="Ride not found")
+        
+    has_access = False
+    if current_user and current_user.id == ride.user_id:
+        has_access = True
+    elif current_user and current_user.role == "admin":
+        has_access = True
+    elif ride.visibility in ["public", "unlisted"]:
+        has_access = True
+    elif token and ride.share_token == token:
+        has_access = True
+        
+    if not has_access:
+        raise HTTPException(status_code=403, detail="Not authorized to view this ride")
         
     if not ride.gpx_file_path or not os.path.exists(ride.gpx_file_path):
         raise HTTPException(status_code=404, detail="GPX file missing from storage")
