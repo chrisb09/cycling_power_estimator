@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchRides, deleteRide, renameRide } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
-import { Activity, Zap, Map, Edit2, Trash2 } from 'lucide-react';
+import { Activity, Zap, Map, Edit2, Trash2, Clock, Navigation } from 'lucide-react';
 
 export default function Dashboard() {
   const [rides, setRides] = useState([]);
@@ -54,47 +54,59 @@ export default function Dashboard() {
     }
   };
 
+  const formatDuration = (seconds) => {
+    if (!seconds) return '--';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  };
+
   return (
     <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <h2 style={{ margin: 0 }}>Ride History</h2>
-        <Link to="/analyze" className="button" style={{ textDecoration: 'none' }}>+ Analyze New GPX</Link>
+        <h2 style={{ margin: 0, fontSize: '1.8rem', color: 'var(--primary)' }}>Your Ride History</h2>
+        <Link to="/" className="btn-primary" style={{ textDecoration: 'none' }}>+ Upload New Ride</Link>
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', margin: '10vh auto' }}>
-          <div className="spinner" style={{ width: '40px', height: '40px' }} />
-        </div>
+        <div style={{ textAlign: 'center', padding: '40px' }}><div className="spinner" /></div>
       ) : rides.length === 0 ? (
-        <div className="glass-panel" style={{ padding: '48px', textAlign: 'center' }}>
-          <Activity size={48} style={{ color: 'var(--text-secondary)', marginBottom: '16px' }} />
-          <h3 style={{ margin: '0 0 8px 0' }}>No rides found</h3>
-          <p style={{ color: 'var(--text-secondary)', margin: '0 0 24px 0' }}>Upload your first GPX file to start tracking your power output over time!</p>
-          <Link to="/analyze" className="button" style={{ display: 'inline-block', textDecoration: 'none' }}>Upload GPX</Link>
+        <div className="glass-panel" style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <Activity size={48} color="var(--border-color)" style={{ marginBottom: '16px' }} />
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>No rides found. Upload your first GPX file to get started!</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
           {rides.map(r => (
-            <div key={r.id} className="glass-panel hover-scale" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div 
+              key={r.id} 
+              className="glass-panel hover-scale" 
+              onClick={() => navigate(`/analyze?ride_id=${r.id}`)}
+              style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', cursor: 'pointer' }}
+            >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1, marginRight: '16px' }}>
                   {editingId === r.id ? (
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }} onClick={(e) => e.stopPropagation()}>
                       <input 
                         type="text" 
                         value={editName} 
                         onChange={(e) => setEditName(e.target.value)} 
                         style={{ padding: '4px 8px', fontSize: '1rem', width: '100%' }}
                         autoFocus
-                        onKeyDown={(e) => { if (e.key === 'Enter') handleRename(r.id); else if (e.key === 'Escape') setEditingId(null); }}
+                        onKeyDown={(e) => { 
+                          if (e.key === 'Enter') handleRename(r.id); 
+                          else if (e.key === 'Escape') setEditingId(null); 
+                        }}
                       />
-                      <button onClick={() => handleRename(r.id)} className="button" style={{ padding: '4px 12px' }}>Save</button>
+                      <button onClick={(e) => { e.stopPropagation(); handleRename(r.id); }} className="button" style={{ padding: '4px 12px' }}>Save</button>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                       <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--primary)' }}>{r.name}</h3>
                       <button 
-                        onClick={() => { setEditingId(r.id); setEditName(r.name); }} 
+                        onClick={(e) => { e.stopPropagation(); setEditingId(r.id); setEditName(r.name); }} 
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px' }}
                         title="Rename"
                       >
@@ -102,40 +114,53 @@ export default function Dashboard() {
                       </button>
                     </div>
                   )}
-                  <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{new Date(r.date).toLocaleDateString()}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Navigation size={12} /> {r.location || 'Unknown Location'}
+                    </span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{new Date(r.date).toLocaleDateString()}</span>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button 
-                    onClick={() => handleDelete(r.id)} 
-                    style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }} 
+                    style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-secondary)', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}
                     title="Delete Ride"
                   >
                     <Trash2 size={16} />
                   </button>
-                  <Link to={`/analyze?ride_id=${r.id}`} className="button" style={{ padding: '6px 12px', fontSize: '0.85rem', textDecoration: 'none' }}>View</Link>
                 </div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Zap size={18} style={{ color: 'var(--accent)' }}/>
+                  <Zap size={18} color="var(--accent)" />
                   <div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Avg Power</div>
-                    <div style={{ fontWeight: 'bold' }}>{Math.round(r.avg_power_watts)} W</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Avg Power</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{Math.round(r.avg_power_watts)}<span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '2px', fontWeight: 'normal' }}>W</span></div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Activity size={18} style={{ color: '#4facfe' }}/>
+                  <Activity size={18} color="var(--primary)" />
                   <div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Normalized</div>
-                    <div style={{ fontWeight: 'bold' }}>{Math.round(r.normalized_power_watts)} W</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Norm Power</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{Math.round(r.normalized_power_watts)}<span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '2px', fontWeight: 'normal' }}>W</span></div>
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Map size={18} color="#10B981" />
+                  <div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Distance</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{r.distance_km ? r.distance_km.toFixed(1) : '--'}<span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '2px', fontWeight: 'normal' }}>km</span></div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Map size={18} style={{ color: '#00f2fe' }}/>
+                  <Clock size={18} color="#F59E0B" />
                   <div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Total Work</div>
-                    <div style={{ fontWeight: 'bold' }}>{Math.round(r.total_work_kj)} kJ</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Moving Time</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{formatDuration(r.moving_time_s)}</div>
                   </div>
                 </div>
               </div>

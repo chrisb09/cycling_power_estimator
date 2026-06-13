@@ -18,6 +18,9 @@ class RideResponse(BaseModel):
     avg_power_watts: float
     normalized_power_watts: float
     total_work_kj: float
+    distance_km: float | None = None
+    moving_time_s: float | None = None
+    location: str | None = None
 
     class Config:
         from_attributes = True

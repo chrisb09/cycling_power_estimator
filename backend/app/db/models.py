@@ -43,6 +43,9 @@ class Ride(Base):
     avg_power_watts = Column(Float)
     normalized_power_watts = Column(Float)
     total_work_kj = Column(Float)
+    distance_km = Column(Float)
+    moving_time_s = Column(Float)
+    location = Column(String)
 
     rider = relationship("User", back_populates="rides")
     bike = relationship("Bike", back_populates="rides")
