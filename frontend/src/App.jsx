@@ -11,6 +11,27 @@ import Profile from './pages/Profile';
 import UserSettings from './pages/UserSettings';
 import AccountSetup from './pages/AccountSetup';
 
+import { API_BASE } from './api/client';
+
+function Footer() {
+  const [info, setInfo] = React.useState(null);
+
+  React.useEffect(() => {
+    fetch(`${API_BASE}/health`)
+      .then(res => res.json())
+      .then(data => setInfo(data))
+      .catch(() => {});
+  }, []);
+
+  if (!info) return null;
+
+  return (
+    <footer style={{ textAlign: 'center', padding: '16px', fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 'auto', borderTop: '1px solid var(--border-color)', opacity: 0.7 }}>
+      v{info.version} • {info.hostname}
+    </footer>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -28,6 +49,7 @@ function App() {
             <Route path="/profile/:username" element={<Profile />} />
             <Route path="/settings" element={<UserSettings />} />
           </Routes>
+          <Footer />
         </div>
       </BrowserRouter>
     </AuthProvider>

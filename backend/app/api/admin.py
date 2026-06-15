@@ -11,8 +11,9 @@ import uuid
 
 router = APIRouter()
 
-# Global admin code generated at startup
+# Global codes generated at startup
 ADMIN_CODE = str(uuid.uuid4())
+NUKE_CODE = str(uuid.uuid4())
 
 class InviteKeyResponse(BaseModel):
     key: str
@@ -104,3 +105,32 @@ def list_invites(db: Session = Depends(get_db), current_admin: User = Depends(ad
             "used_by": k.used_by
         })
     return res
+
+class NukeRequest(BaseModel):
+    nuke_code: str
+
+@router.post("/nuke")
+def nuke_database(payload: NukeRequest, db: Session = Depends(get_db)):
+    global ADMIN_CODE, NUKE_CODE
+    if payload.nuke_code != NUKE_CODE:
+        raise HTTPException(status_code=403, detail="Invalid nuke code")
+    
+    from app.db.models import Ride, Bike, InviteKey, User
+    
+    # Delete everything
+    db.query(Ride).delete()
+    db.query(Bike).delete()
+    db.query(InviteKey).delete()
+    db.query(User).delete()
+    db.commit()
+
+    ADMIN_CODE = str(uuid.uuid4())
+    NUKE_CODE = str(uuid.uuid4())
+    
+    print("\n" + "="*50)
+    print("DATABASE NUKED! ALL DATA DESTROYED.")
+    print(f"NEW ADMIN CODE: {ADMIN_CODE}")
+    print(f"NEW NUKE CODE: {NUKE_CODE}")
+    print("="*50 + "\n")
+
+    return {"message": "Database wiped successfully. New codes printed to server console."}
