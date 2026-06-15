@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secure-production-key-here}
 
   frontend:
     build:
