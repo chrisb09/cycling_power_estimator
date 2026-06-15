@@ -3,6 +3,11 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import jwt
+from typing import Optional
+import os
+from fastapi import File, UploadFile
+from PIL import Image
+import uuid
 
 from app.db.database import get_db
 from app.db.models import User
@@ -108,6 +113,10 @@ class UserResponse(BaseModel):
     is_active: int
     default_ride_visibility: str
     profile_visibility: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    location: Optional[str] = None
+    profile_picture: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -121,6 +130,9 @@ class UserSettingsUpdate(BaseModel):
     height_cm: float | None = None
     default_ride_visibility: str | None = None
     profile_visibility: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    location: str | None = None
 
 @router.patch("/me", response_model=UserResponse)
 def update_me(payload: UserSettingsUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -132,9 +144,63 @@ def update_me(payload: UserSettingsUpdate, db: Session = Depends(get_db), curren
         current_user.default_ride_visibility = payload.default_ride_visibility
     if payload.profile_visibility is not None:
         current_user.profile_visibility = payload.profile_visibility
+    if payload.first_name is not None:
+        current_user.first_name = payload.first_name
+    if payload.last_name is not None:
+        current_user.last_name = payload.last_name
+    if payload.location is not None:
+        current_user.location = payload.location
     db.commit()
     db.refresh(current_user)
     return current_user
+
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "profiles")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@router.post("/me/picture", response_model=UserResponse)
+async def upload_profile_picture(file: UploadFile = File(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Invalid file type. Must be an image.")
+        
+    try:
+        # Read image
+        img = Image.open(file.file)
+        
+        # Crop to 1:1
+        width, height = img.size
+        min_dim = min(width, height)
+        left = (width - min_dim) / 2
+        top = (height - min_dim) / 2
+        right = (width + min_dim) / 2
+        bottom = (height + min_dim) / 2
+        img = img.crop((left, top, right, bottom))
+        
+        # Resize if too large (max 512x512)
+        if min_dim > 512:
+            img = img.resize((512, 512), Image.Resampling.LANCZOS)
+            
+        # Convert to RGB (in case of RGBA/P)
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+            
+        # Save as optimized JPEG
+        filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}.jpg"
+        filepath = os.path.join(UPLOAD_DIR, filename)
+        img.save(filepath, format="JPEG", quality=85)
+        
+        # Remove old picture if exists
+        if current_user.profile_picture:
+            old_path = os.path.join(UPLOAD_DIR, os.path.basename(current_user.profile_picture))
+            if os.path.exists(old_path):
+                os.remove(old_path)
+                
+        # Update user
+        current_user.profile_picture = f"/uploads/profiles/{filename}"
+        db.commit()
+        db.refresh(current_user)
+        return current_user
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not process image: {str(e)}")
 
 class InviteDetailsResponse(BaseModel):
     key: str

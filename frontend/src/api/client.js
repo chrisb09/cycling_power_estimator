@@ -57,6 +57,21 @@ export const updateMe = async (data) => {
   return response.json();
 };
 
+export const uploadProfilePicture = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${API_BASE}/me/picture`, {
+    method: 'POST',
+    headers: getHeaders(), // Don't set Content-Type, browser will set it with boundary
+    body: formData
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.detail || 'Failed to upload picture');
+  }
+  return response.json();
+};
+
 export const selfPromote = async (code) => {
   const response = await fetch(`${API_BASE}/admin/self-promote`, {
     method: 'POST',
@@ -179,6 +194,27 @@ export const analyzeRide = async (file, params, auxFile = null) => {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.detail || 'Failed to analyze ride');
+  }
+
+  return response.json();
+};
+
+export const reanalyzeSavedRide = async (rideId, params) => {
+  const response = await fetch(`${API_BASE}/rides/${rideId}/reanalyze`, {
+    method: 'POST',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      rider_kg: params.rider_kg,
+      bike_kg: params.bike_kg,
+      tires: params.tires,
+      position: params.position,
+      drivetrain: params.drivetrain
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to re-analyze ride');
   }
 
   return response.json();

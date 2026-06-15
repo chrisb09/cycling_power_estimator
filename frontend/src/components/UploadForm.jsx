@@ -3,9 +3,9 @@ import { UploadCloud, Bike, Weight, Settings, Eye } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { fetchMe } from '../api/client';
 
-export default function UploadForm({ onAnalyze, isLoading, initialFile = null, initialParams = null }) {
+export default function UploadForm({ onAnalyze, isLoading, initialFile = null, initialAuxFile = null, initialParams = null, isEditingSavedRide = false, savedFileName = null, savedAuxFileName = null }) {
   const [file, setFile] = useState(initialFile);
-  const [auxFile, setAuxFile] = useState(null);
+  const [auxFile, setAuxFile] = useState(initialAuxFile);
   const [params, setParams] = useState(initialParams || {
     rider_kg: 75.0,
     bike_kg: 10.0,
@@ -99,7 +99,7 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (file) {
+    if (file || isEditingSavedRide) {
       onAnalyze(file, params, auxFile);
     }
   };
@@ -111,12 +111,14 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
       </h3>
       
       <div 
-        className={`file-drop-area ${file ? 'has-file' : ''} ${isDragging ? 'drag-over' : ''}`}
+        className={`file-drop-area ${file || isEditingSavedRide ? 'has-file' : ''} ${isDragging ? 'drag-over' : ''}`}
         style={{ position: 'relative', overflow: 'hidden' }}
       >
-        <UploadCloud className="file-drop-icon" size={28} />
+        <UploadCloud className="file-drop-icon" size={28} style={{ color: (isEditingSavedRide && !file) ? 'var(--primary)' : undefined }} />
         {file ? (
-          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0, color: 'var(--accent)' }}>Loaded: {file.name}</p>
+          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0, color: 'var(--primary)', wordBreak: 'break-all' }}>Loaded: {file.name}</p>
+        ) : isEditingSavedRide ? (
+          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0, color: 'var(--primary)', wordBreak: 'break-all' }}>Using saved: {savedFileName || 'Original GPX'}</p>
         ) : (
           <p style={{ fontSize: '0.9rem', margin: 0, color: 'var(--text-secondary)' }}>Click or drag to upload GPX file</p>
         )}
@@ -133,7 +135,9 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
         style={{ marginTop: '12px', minHeight: '80px', padding: '12px', position: 'relative', overflow: 'hidden' }}
       >
         {auxFile ? (
-          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0, color: 'var(--accent)' }}>Loaded: {auxFile.name}</p>
+          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0, color: 'var(--primary)', wordBreak: 'break-all' }}>Loaded: {auxFile.name}</p>
+        ) : (isEditingSavedRide && savedAuxFileName) ? (
+          <p style={{ fontWeight: 600, fontSize: '0.9rem', margin: 0, color: 'var(--primary)', wordBreak: 'break-all' }}>Using saved: {savedAuxFileName}</p>
         ) : (
           <div style={{ textAlign: 'center' }}>
             <p style={{ fontSize: '0.85rem', margin: '0 0 4px 0', color: 'var(--text-secondary)' }}><strong style={{ color: 'var(--text-primary)' }}>Optional:</strong> Upload a secondary GPX file</p>
@@ -203,7 +207,7 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
       <button 
         type="submit" 
         className="btn-primary" 
-        disabled={!file || isLoading}
+        disabled={(!file && !isEditingSavedRide) || isLoading}
         style={{ width: '100%', marginTop: '16px' }}
       >
         {isLoading ? <div className="spinner" /> : "Upload & Calculate Power"}

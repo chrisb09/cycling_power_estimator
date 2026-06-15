@@ -15,6 +15,10 @@ class User(Base):
     is_active = Column(Integer, default=1) # 1 for active, 0 for disabled
     default_ride_visibility = Column(String, default="private") # 'private', 'unlisted', 'public'
     profile_visibility = Column(String, default="public") # 'private', 'internal', 'public'
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    profile_picture = Column(String, nullable=True)
 
     bikes = relationship("Bike", back_populates="owner")
     rides = relationship("Ride", back_populates="rider")
@@ -53,6 +57,7 @@ class Ride(Base):
     name = Column(String)
     date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     gpx_file_path = Column(String)
+    aux_gpx_file_path = Column(String, nullable=True)
     riding_position = Column(String, default="hoods") # 'tops', 'hoods', 'drops', 'aero'
     visibility = Column(String, default="private") # 'private', 'unlisted', 'public'
     share_token = Column(String, nullable=True, unique=True, index=True)

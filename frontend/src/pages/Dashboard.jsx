@@ -125,7 +125,7 @@ export default function Dashboard() {
               style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1, marginRight: '16px' }}>
+                <div style={{ flex: 1, marginRight: '16px', minWidth: 0 }}>
                   {editingId === r.id ? (
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }} onClick={(e) => e.stopPropagation()}>
                       <input 
@@ -142,11 +142,11 @@ export default function Dashboard() {
                       <button onClick={(e) => { e.stopPropagation(); handleRename(r.id); }} className="button" style={{ padding: '4px 12px' }}>Save</button>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--primary)' }}>{r.name}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', minWidth: 0 }}>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{r.name}</h3>
                       <button 
                         onClick={(e) => { e.stopPropagation(); setEditingId(r.id); setEditName(r.name); }} 
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px' }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px', flexShrink: 0 }}
                         title="Rename"
                       >
                         <Edit2 size={14} />
@@ -154,10 +154,10 @@ export default function Dashboard() {
                     </div>
                   )}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Navigation size={12} /> {r.location || 'Unknown Location'}
+                    <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
+                      <Navigation size={12} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{r.location || 'Unknown Location'}</span>
                     </span>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{new Date(r.date).toLocaleDateString()}</span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{new Date(r.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -196,8 +196,11 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Activity size={18} color="var(--primary)" />
                   <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Norm Power</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>{Math.round(r.normalized_power_watts)}<span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '2px', fontWeight: 'normal' }}>W</span></div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Avg Speed</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 600 }}>
+                      {r.distance_km && r.moving_time_s ? (r.distance_km / (r.moving_time_s / 3600)).toFixed(1) : '--'}
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '2px', fontWeight: 'normal' }}>km/h</span>
+                    </div>
                   </div>
                 </div>
               </div>
