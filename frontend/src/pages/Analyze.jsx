@@ -5,7 +5,7 @@ import StatsSummary from '../components/StatsSummary';
 import RideHeader from '../components/RideHeader';
 import RideChart from '../components/RideChart';
 import Histograms from '../components/Histograms';
-import { analyzeRide, fetchRideAnalysis } from '../api/client';
+import { analyzeRide, fetchRideAnalysis, reanalyzeSavedRide } from '../api/client';
 import { Activity, Settings, X } from 'lucide-react';
 
 function Analyze() {
@@ -14,6 +14,7 @@ function Analyze() {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [currentFile, setCurrentFile] = useState(null);
+  const [currentAuxFile, setCurrentAuxFile] = useState(null);
   const [currentParams, setCurrentParams] = useState(null);
   const [searchParams] = useSearchParams();
 
@@ -44,11 +45,20 @@ function Analyze() {
     setLoading(true);
     setError(null);
     try {
-      const result = await analyzeRide(file, params, auxFile);
-      setData(result);
-      setCurrentFile(file);
-      setCurrentParams(params);
-      setShowModal(false);
+      const rideId = searchParams.get('ride_id');
+      if (!file && rideId) {
+        const result = await reanalyzeSavedRide(rideId, params);
+        setData(result);
+        setCurrentParams(params);
+        setShowModal(false);
+      } else {
+        const result = await analyzeRide(file, params, auxFile);
+        setData(result);
+        setCurrentFile(file);
+        setCurrentAuxFile(auxFile);
+        setCurrentParams(params);
+        setShowModal(false);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -67,7 +77,16 @@ function Analyze() {
 
         {!data && !loading && (
           <div style={{ maxWidth: '600px', margin: '4vh auto', width: '100%' }}>
-            <UploadForm onAnalyze={handleAnalyze} isLoading={loading} initialFile={currentFile} initialParams={currentParams} />
+            <UploadForm 
+              onAnalyze={handleAnalyze} 
+              isLoading={loading} 
+              initialFile={currentFile} 
+              initialAuxFile={currentAuxFile}
+              initialParams={currentParams} 
+              isEditingSavedRide={!!searchParams.get('ride_id')}
+              savedFileName={data?.summary?.name}
+              savedAuxFileName={data?.summary?.aux_name}
+            />
           </div>
         )}
 
@@ -108,7 +127,16 @@ function Analyze() {
             >
               <X size={20} />
             </button>
-            <UploadForm onAnalyze={handleAnalyze} isLoading={loading} initialFile={currentFile} initialParams={currentParams} />
+            <UploadForm 
+              onAnalyze={handleAnalyze} 
+              isLoading={loading} 
+              initialFile={currentFile} 
+              initialAuxFile={currentAuxFile}
+              initialParams={currentParams} 
+              isEditingSavedRide={!!searchParams.get('ride_id')}
+              savedFileName={data?.summary?.name}
+              savedAuxFileName={data?.summary?.aux_name}
+            />
           </div>
         </div>
       )}

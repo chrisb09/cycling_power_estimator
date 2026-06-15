@@ -139,13 +139,6 @@ async def analyze_ride(
     content = await file.read()
     
     try:
-        params = RideParams(
-            rider_kg=rider_kg,
-            bike_kg=bike_kg,
-            tires=tires,
-            position=position,
-            drivetrain=drivetrain
-        )
         df = parse_gpx(content)
         
         # If aux file is provided, use it to augment elevation
@@ -157,15 +150,27 @@ async def analyze_ride(
             except Exception:
                 pass
         
+        is_external_ele = False
         # If elevation is still missing entirely, augment it via Open-Elevation API
         if (df["ele"] == 0.0).all():
             df = await fetch_elevation_for_df(df)
+            is_external_ele = True
             
+        params = RideParams(
+            rider_kg=rider_kg,
+            bike_kg=bike_kg,
+            tires=tires,
+            position=position,
+            drivetrain=drivetrain,
+            ele_smooth_s=60 if is_external_ele else 7
+        )
+        
         computed_df = compute_ride(df, params)
         summary = summarize(computed_df)
         
         # Pass device from GPX
         summary["device"] = df.attrs.get("creator", "Unknown Device")
+        summary["name"] = file.filename.replace(".gpx", "")
         
         # Save the GPX file persistently
         os.makedirs("storage/gpx", exist_ok=True)
@@ -174,6 +179,13 @@ async def analyze_ride(
         with open(gpx_path, "wb") as f:
             f.write(content)
             
+        aux_gpx_path = None
+        if 'aux_content' in locals() and aux_file is not None and aux_file.filename:
+            aux_gpx_path = f"storage/gpx/{file_id}_aux_{aux_file.filename}"
+            with open(aux_gpx_path, "wb") as f:
+                f.write(aux_content)
+            summary["aux_name"] = aux_file.filename.replace(".gpx", "")
+            
         # Get start location
         loc = await fetch_location(computed_df["lat"].iloc[0], computed_df["lon"].iloc[0])
         summary["location"] = loc
@@ -181,10 +193,14 @@ async def analyze_ride(
         # Log the ride in the database if the user is authenticated
         if current_user:
             final_visibility = visibility if visibility else current_user.default_ride_visibility
+            ride_date = df["time"].iloc[0].to_pydatetime()
+            
             ride_record = Ride(
                 user_id=current_user.id,
                 name=file.filename.replace(".gpx", ""),
                 gpx_file_path=gpx_path,
+                aux_gpx_file_path=aux_gpx_path,
+                date=ride_date,
                 riding_position=position,
                 avg_power_watts=summary["avg_power_w"],
                 normalized_power_watts=summary["normalized_power_w"],

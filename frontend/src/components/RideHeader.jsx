@@ -26,9 +26,9 @@ export default function RideHeader({ summary, params, onEdit }) {
   return (
     <div className="glass-panel animate-fade-in" style={{ padding: '20px', marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'center', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Map size={24} color="var(--accent)" />
-          {summary.distance_km.toFixed(1)} km Ride
+        <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', wordBreak: 'break-word' }}>
+          <Map size={24} color="var(--accent)" style={{ flexShrink: 0 }} />
+          <span>{summary.distance_km.toFixed(1)} km Ride</span>
           {summary.location && summary.location !== 'Unknown Location' && (
             <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '12px', fontWeight: 500 }}>
               <MapPin size={16} /> {summary.location}
@@ -40,15 +40,18 @@ export default function RideHeader({ summary, params, onEdit }) {
             </span>
           )}
           {summary.rider_username && summary.rider_username !== 'Unknown' && (
-            <a href={`/profile/${summary.rider_username}`} style={{ fontSize: '0.85rem', color: 'var(--primary)', textDecoration: 'none', marginLeft: 'auto', border: '1px solid var(--primary)', padding: '4px 8px', borderRadius: '4px' }}>
-              Rider Profile: {summary.rider_username}
+            <a href={`/profile/${summary.rider_username}`} style={{ fontSize: '1rem', color: 'var(--accent)', textDecoration: 'none', marginLeft: 'auto', padding: '4px 8px', borderRadius: '4px', background: 'rgba(255, 71, 87, 0.1)', fontWeight: 600 }}>
+              @{summary.rider_username}
             </a>
           )}
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Calendar size={16} />
-            <span>{startTime} — {endTime}</span>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+            <Calendar size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span>{startTime}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>{endTime}</span>
+            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Clock size={16} />

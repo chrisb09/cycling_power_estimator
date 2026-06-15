@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import analyze, auth, bikes, rides, admin
@@ -24,6 +25,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+import os
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads", "profiles")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads/profiles", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(bikes.router, prefix="/api/bikes", tags=["bikes"])

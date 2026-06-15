@@ -9,6 +9,7 @@ import Analyze from './pages/Analyze';
 import AdminPanel from './pages/AdminPanel';
 import Profile from './pages/Profile';
 import UserSettings from './pages/UserSettings';
+import AccountSetup from './pages/AccountSetup';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             <Route path="/" element={<Navigate to="/analyze" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/setup" element={<AccountSetup />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/analyze" element={<Analyze />} />
             <Route path="/admin" element={<AdminPanel />} />
