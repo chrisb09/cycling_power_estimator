@@ -10,9 +10,10 @@ Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.api.admin import ADMIN_CODE
+    from app.api.admin import ADMIN_CODE, NUKE_CODE
     print("\n" + "="*50)
     print(f"ADMIN CODE FOR SELF-PROMOTION: {ADMIN_CODE}")
+    print(f"NUKE CODE TO WIPE DB: {NUKE_CODE}")
     print("="*50 + "\n")
     yield
 
@@ -37,6 +38,24 @@ app.include_router(rides.router, prefix="/api/rides", tags=["rides"])
 app.include_router(analyze.router, prefix="/api", tags=["analyze"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
+import socket
+import tomllib
+
+def get_version():
+    try:
+        pyproject_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "pyproject.toml")
+        with open(pyproject_path, "rb") as f:
+            data = tomllib.load(f)
+            return data.get("project", {}).get("version", "0.1.0")
+    except Exception:
+        return "0.1.0"
+
+APP_VERSION = get_version()
+
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "version": APP_VERSION,
+        "hostname": socket.gethostname()
+    }

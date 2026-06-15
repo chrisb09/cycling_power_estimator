@@ -60,9 +60,17 @@ def admin_required(user: User = Depends(get_current_user)):
 def register(user: UserCreate, db: Session = Depends(get_db)):
     # Validate Invite Key
     from app.db.models import InviteKey
-    key_record = db.query(InviteKey).filter(InviteKey.key == user.invite_key, InviteKey.is_used == 0).first()
-    if not key_record:
-        raise HTTPException(status_code=400, detail="Invalid or expired invite key")
+    from app.api.admin import ADMIN_CODE
+    
+    is_admin_invite = False
+    key_record = None
+    
+    if user.invite_key == ADMIN_CODE:
+        is_admin_invite = True
+    else:
+        key_record = db.query(InviteKey).filter(InviteKey.key == user.invite_key, InviteKey.is_used == 0).first()
+        if not key_record:
+            raise HTTPException(status_code=400, detail="Invalid or expired invite key")
 
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
@@ -74,17 +82,18 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         password_hash=hashed_password,
         weight_kg=user.weight_kg,
         height_cm=user.height_cm,
-        role="user",
+        role="admin" if is_admin_invite else "user",
         is_active=1
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     
-    # Mark invite key as used
-    key_record.is_used = 1
-    key_record.used_by = new_user.id
-    db.commit()
+    if key_record:
+        # Mark invite key as used
+        key_record.is_used = 1
+        key_record.used_by = new_user.id
+        db.commit()
     
     access_token = create_access_token(data={"sub": new_user.username})
     return {"access_token": access_token, "token_type": "bearer"}
@@ -210,6 +219,15 @@ class InviteDetailsResponse(BaseModel):
 @router.get("/invites/{key}", response_model=InviteDetailsResponse)
 def get_invite_details(key: str, db: Session = Depends(get_db)):
     from app.db.models import InviteKey
+    from app.api.admin import ADMIN_CODE
+    
+    if key == ADMIN_CODE:
+        return {
+            "key": key,
+            "creator_username": "System (Admin)",
+            "is_used": 0
+        }
+        
     key_record = db.query(InviteKey).filter(InviteKey.key == key).first()
     if not key_record:
         raise HTTPException(status_code=404, detail="Invite key not found")

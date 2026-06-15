@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminFetchUsers, adminFetchInvites, adminGenerateInvite, adminUpdateUserRole, adminUpdateUserStatus, fetchMe } from '../api/client';
+import { adminFetchUsers, adminFetchInvites, adminGenerateInvite, adminUpdateUserRole, adminUpdateUserStatus, fetchMe, adminNukeDatabase } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
-import { Shield, Users, Key, CheckCircle, XCircle } from 'lucide-react';
+import { Shield, Users, Key, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
 export default function AdminPanel() {
   const [users, setUsers] = useState([]);
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [nukeCode, setNukeCode] = useState('');
+  const [nuking, setNuking] = useState(false);
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -64,6 +66,23 @@ export default function AdminPanel() {
       setInvites([invite, ...invites]);
     } catch (err) {
       alert(err.message);
+    }
+  };
+
+  const handleNuke = async () => {
+    if (!nukeCode.trim()) return;
+    if (!window.confirm("WARNING: This will completely wipe all users, rides, bikes, and invites from the database. This action is irreversible. Are you absolutely sure?")) {
+      return;
+    }
+    setNuking(true);
+    try {
+      const res = await adminNukeDatabase(nukeCode.trim());
+      alert(res.message);
+      // Auto logout since our user might be deleted
+      window.location.href = '/login';
+    } catch (err) {
+      alert(err.message);
+      setNuking(false);
     }
   };
 
@@ -161,6 +180,32 @@ export default function AdminPanel() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="glass-panel" style={{ padding: '24px', marginTop: '32px', border: '1px solid rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.05)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <AlertTriangle size={24} color="#EF4444" />
+          <h3 style={{ margin: 0, color: '#EF4444' }}>Danger Zone: Database Nuke</h3>
+        </div>
+        <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+          Enter the Nuke Code printed in the server console to completely wipe the entire database. This deletes all users, rides, and settings permanently.
+        </p>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <input 
+            type="text" 
+            placeholder="Enter Nuke Code" 
+            value={nukeCode}
+            onChange={e => setNukeCode(e.target.value)}
+            style={{ flex: 1, padding: '10px', background: 'var(--bg-dark)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '4px' }}
+          />
+          <button 
+            onClick={handleNuke}
+            disabled={nuking || !nukeCode.trim()}
+            style={{ padding: '10px 24px', background: '#EF4444', color: 'white', border: 'none', borderRadius: '4px', cursor: (nuking || !nukeCode.trim()) ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: (nuking || !nukeCode.trim()) ? 0.5 : 1 }}
+          >
+            {nuking ? 'Nuking...' : 'WIPE DATABASE'}
+          </button>
         </div>
       </div>
     </div>

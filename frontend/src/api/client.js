@@ -169,6 +169,19 @@ export const adminFetchInvites = async () => {
   return response.json();
 };
 
+export const adminNukeDatabase = async (nukeCode) => {
+  const response = await fetch(`${API_BASE}/admin/nuke`, {
+    method: 'POST',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nuke_code: nukeCode })
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || 'Nuke failed');
+  }
+  return response.json();
+};
+
 export const fetchBikes = async () => {
   const response = await fetch(`${API_BASE}/bikes/`, { headers: getHeaders() });
   if (!response.ok) throw new Error('Failed to fetch bikes');
