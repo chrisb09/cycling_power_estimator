@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
+import { Link } from 'react-router-dom';
 import { UploadCloud, Bike, Weight, Settings, Eye } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
-import { fetchMe } from '../api/client';
+import { fetchMe, fetchBikes } from '../api/client';
 
 export default function UploadForm({ onAnalyze, isLoading, initialFile = null, initialAuxFile = null, initialParams = null, isEditingSavedRide = false, savedFileName = null, savedAuxFileName = null }) {
   const [file, setFile] = useState(initialFile);
   const [auxFile, setAuxFile] = useState(initialAuxFile);
   const [params, setParams] = useState(initialParams || {
+    name: '',
     rider_kg: 75.0,
     bike_kg: 10.0,
     tires: 'commuter',
@@ -15,6 +17,31 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
     visibility: 'private'
   });
   const { token } = useContext(AuthContext);
+  const [bikes, setBikes] = useState([]);
+  const [selectedBikeId, setSelectedBikeId] = useState('');
+
+  useEffect(() => {
+    if (token) {
+      fetchBikes().then(setBikes).catch(() => {});
+    }
+  }, [token]);
+
+  const handleBikeSelect = (e) => {
+    const id = e.target.value;
+    setSelectedBikeId(id);
+    if (!id) return;
+    const bike = bikes.find(b => b.id === parseInt(id));
+    if (bike) {
+      setParams(p => ({
+        ...p,
+        bike_kg: bike.weight_kg,
+        tires: bike.tire_type,
+        drivetrain: bike.drivetrain,
+        position: bike.default_riding_position || p.position,
+        bike_id: bike.id
+      }));
+    }
+  };
   
   const [isDragging, setIsDragging] = useState(false);
   const [isAuxDragging, setIsAuxDragging] = useState(false);
@@ -109,6 +136,21 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
       <h3 style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1.05rem', margin: '0 0 16px 0', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
         <Settings size={18} color="var(--accent)" /> Parameters
       </h3>
+
+      {token && bikes.length > 0 && (
+        <div className="form-group" style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Bike size={14}/> Bike Preset</label>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <select value={selectedBikeId} onChange={handleBikeSelect} style={{ flex: 1 }}>
+              <option value="">Custom / No Preset</option>
+              {bikes.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+            <Link to="/bikes" style={{ fontSize: '0.8rem', color: 'var(--primary)', whiteSpace: 'nowrap', textDecoration: 'none' }}>+ Manage</Link>
+          </div>
+        </div>
+      )}
       
       <div 
         className={`file-drop-area ${file || isEditingSavedRide ? 'has-file' : ''} ${isDragging ? 'drag-over' : ''}`}
@@ -150,6 +192,11 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
           accept=".gpx"
           style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }} 
         />
+      </div>
+
+      <div className="form-group" style={{ marginTop: '16px' }}>
+        <label>Ride Name (optional)</label>
+        <input type="text" name="name" value={params.name || ''} onChange={handleParamChange} placeholder="Defaults to the filename" style={{ width: '100%' }} />
       </div>
 
       <div className="grid grid-cols-2" style={{ marginTop: '16px' }}>

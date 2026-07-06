@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { loginUser } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 
@@ -9,6 +9,8 @@ export default function Login() {
   const [error, setError] = useState(null);
   const { setToken } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const reason = searchParams.get('reason');
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -24,6 +26,11 @@ export default function Login() {
   return (
     <div style={{ maxWidth: '400px', margin: '10vh auto', padding: '32px' }} className="glass-panel animate-fade-in">
       <h2 style={{ marginTop: 0, marginBottom: '24px', textAlign: 'center' }}>Welcome Back</h2>
+      {reason === 'expired' && (
+        <div style={{ color: 'var(--accent)', background: 'rgba(255, 71, 87, 0.1)', padding: '12px', borderRadius: '8px', marginBottom: '16px', textAlign: 'center' }}>
+          Your session has expired — please log in again.
+        </div>
+      )}
       {error && <div style={{ color: 'var(--accent)', background: 'rgba(255, 71, 87, 0.1)', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>{error}</div>}
       <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <input 

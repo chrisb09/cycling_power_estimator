@@ -2,11 +2,13 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import analyze, auth, bikes, rides, admin
+from app.api import analyze, auth, bikes, rides, admin, collections
 from app.db.database import engine, Base
+from app.db.migrations import run_migrations
 
 # Create all database tables (if they don't exist yet)
 Base.metadata.create_all(bind=engine)
+run_migrations(engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,7 +30,8 @@ app.add_middleware(
 )
 
 import os
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads", "profiles")
+DATA_DIR = os.environ.get("DATA_DIR", "./data")
+UPLOAD_DIR = os.path.join(DATA_DIR, "uploads", "profiles")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads/profiles", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
@@ -37,6 +40,7 @@ app.include_router(bikes.router, prefix="/api/bikes", tags=["bikes"])
 app.include_router(rides.router, prefix="/api/rides", tags=["rides"])
 app.include_router(analyze.router, prefix="/api", tags=["analyze"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+app.include_router(collections.router, prefix="/api/collections", tags=["collections"])
 
 import socket
 import tomllib

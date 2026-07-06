@@ -130,9 +130,18 @@ async def analyze_ride(
     position: str = Form("hoods"),
     drivetrain: str = Form("average"),
     visibility: str = Form(None),
+    name: Optional[str] = Form(None),
+    bike_id: Optional[int] = Form(None),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
+    if tires not in ["slick", "commuter", "gravel", "mtb"]:
+        raise HTTPException(status_code=400, detail=f"Invalid tires value: {tires}")
+    if position not in ["tops", "hoods", "drops", "aero"]:
+        raise HTTPException(status_code=400, detail=f"Invalid position value: {position}")
+    if drivetrain not in ["optimized", "average", "dirty"]:
+        raise HTTPException(status_code=400, detail=f"Invalid drivetrain value: {drivetrain}")
+        
     if not file.filename.endswith(".gpx"):
         raise HTTPException(status_code=400, detail="File must be a GPX file")
     
@@ -170,18 +179,20 @@ async def analyze_ride(
         
         # Pass device from GPX
         summary["device"] = df.attrs.get("creator", "Unknown Device")
-        summary["name"] = file.filename.replace(".gpx", "")
+        summary["name"] = name if name else file.filename.replace(".gpx", "")
         
         # Save the GPX file persistently
-        os.makedirs("storage/gpx", exist_ok=True)
+        data_dir = os.environ.get("DATA_DIR", "./data")
+        gpx_dir = os.path.join(data_dir, "storage/gpx")
+        os.makedirs(gpx_dir, exist_ok=True)
         file_id = str(uuid.uuid4())
-        gpx_path = f"storage/gpx/{file_id}_{file.filename}"
+        gpx_path = os.path.join(gpx_dir, f"{file_id}_{file.filename}")
         with open(gpx_path, "wb") as f:
             f.write(content)
             
         aux_gpx_path = None
         if 'aux_content' in locals() and aux_file is not None and aux_file.filename:
-            aux_gpx_path = f"storage/gpx/{file_id}_aux_{aux_file.filename}"
+            aux_gpx_path = os.path.join(gpx_dir, f"{file_id}_aux_{aux_file.filename}")
             with open(aux_gpx_path, "wb") as f:
                 f.write(aux_content)
             summary["aux_name"] = aux_file.filename.replace(".gpx", "")
@@ -197,7 +208,8 @@ async def analyze_ride(
             
             ride_record = Ride(
                 user_id=current_user.id,
-                name=file.filename.replace(".gpx", ""),
+                bike_id=bike_id,
+                name=name or file.filename.replace(".gpx", ""),
                 gpx_file_path=gpx_path,
                 aux_gpx_file_path=aux_gpx_path,
                 date=ride_date,
@@ -208,7 +220,11 @@ async def analyze_ride(
                 distance_km=summary["distance_km"],
                 moving_time_s=summary["moving_time_s"],
                 location=summary["location"],
-                visibility=final_visibility
+                visibility=final_visibility,
+                rider_kg=rider_kg,
+                bike_kg=bike_kg,
+                tires=tires,
+                drivetrain=drivetrain
             )
             db.add(ride_record)
             db.commit()

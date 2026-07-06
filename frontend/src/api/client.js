@@ -1,5 +1,11 @@
 export const API_BASE = '/api';
 
+let unauthorizedCallback = null;
+
+export const registerUnauthorizedCallback = (callback) => {
+  unauthorizedCallback = callback;
+};
+
 const getHeaders = () => {
   const token = localStorage.getItem('token');
   const headers = {};
@@ -9,182 +15,199 @@ const getHeaders = () => {
   return headers;
 };
 
+const apiFetch = async (url, options = {}, defaultErrorMessage = 'Request failed') => {
+  const response = await fetch(url, options);
+  
+  if (response.status === 401) {
+    const isAuthEndpoint = url.endsWith('/login') || url.endsWith('/register');
+    if (!isAuthEndpoint && unauthorizedCallback) {
+      unauthorizedCallback();
+    }
+  }
+
+  if (!response.ok) {
+    let message = defaultErrorMessage;
+    try {
+      const err = await response.json();
+      if (err && err.detail) {
+        message = err.detail;
+      }
+    } catch (e) {}
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
+  }
+
+  return response;
+};
+
 export const loginUser = async (username, password) => {
   const formData = new URLSearchParams();
   formData.append('username', username);
   formData.append('password', password);
-  const response = await fetch(`${API_BASE}/login`, {
+  const response = await apiFetch(`${API_BASE}/login`, {
     method: 'POST',
     body: formData,
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-  });
-  if (!response.ok) throw new Error('Login failed');
+  }, 'Login failed');
   return response.json();
 };
 
 export const registerUser = async (data) => {
-  const response = await fetch(`${API_BASE}/register`, {
+  const response = await apiFetch(`${API_BASE}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(()=>({}));
-    throw new Error(err.detail || 'Registration failed');
-  }
+  }, 'Registration failed');
   return response.json();
 };
 
 export const fetchInviteDetails = async (key) => {
-  const response = await fetch(`${API_BASE}/invites/${key}`);
-  if (!response.ok) throw new Error('Invite key not found or invalid');
+  const response = await apiFetch(`${API_BASE}/invites/${key}`, {}, 'Invite key not found or invalid');
   return response.json();
 };
 
 export const fetchMe = async () => {
-  const response = await fetch(`${API_BASE}/me`, { headers: getHeaders() });
-  if (!response.ok) throw new Error('Failed to fetch user data');
+  const response = await apiFetch(`${API_BASE}/me`, { headers: getHeaders() }, 'Failed to fetch user data');
   return response.json();
 };
 
 export const updateMe = async (data) => {
-  const response = await fetch(`${API_BASE}/me`, {
+  const response = await apiFetch(`${API_BASE}/me`, {
     method: 'PATCH',
     headers: { ...getHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
-  });
-  if (!response.ok) throw new Error('Failed to update user data');
+  }, 'Failed to update user data');
   return response.json();
 };
 
 export const uploadProfilePicture = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
-  const response = await fetch(`${API_BASE}/me/picture`, {
+  const response = await apiFetch(`${API_BASE}/me/picture`, {
     method: 'POST',
-    headers: getHeaders(), // Don't set Content-Type, browser will set it with boundary
+    headers: getHeaders(),
     body: formData
-  });
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.detail || 'Failed to upload picture');
-  }
+  }, 'Failed to upload picture');
   return response.json();
 };
 
 export const selfPromote = async (code) => {
-  const response = await fetch(`${API_BASE}/admin/self-promote`, {
+  const response = await apiFetch(`${API_BASE}/admin/self-promote`, {
     method: 'POST',
     headers: { ...getHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ admin_code: code })
-  });
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.detail || 'Promotion failed');
-  }
+  }, 'Promotion failed');
   return response.json();
 };
 
 export const fetchRides = async () => {
-  const response = await fetch(`${API_BASE}/rides/`, { headers: getHeaders() });
-  if (!response.ok) throw new Error('Failed to fetch rides');
+  const response = await apiFetch(`${API_BASE}/rides/`, { headers: getHeaders() }, 'Failed to fetch rides');
   return response.json();
 };
 
 export const deleteRide = async (rideId) => {
-  const response = await fetch(`${API_BASE}/rides/${rideId}`, {
+  const response = await apiFetch(`${API_BASE}/rides/${rideId}`, {
     method: 'DELETE',
     headers: getHeaders()
-  });
-  if (!response.ok) throw new Error('Failed to delete ride');
+  }, 'Failed to delete ride');
   return response.json();
 };
 
 export const updateRide = async (rideId, data) => {
-  const response = await fetch(`${API_BASE}/rides/${rideId}`, {
+  const response = await apiFetch(`${API_BASE}/rides/${rideId}`, {
     method: 'PATCH',
     headers: { ...getHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
-  });
-  if (!response.ok) throw new Error('Failed to update ride');
+  }, 'Failed to update ride');
   return response.json();
 };
 
 export const fetchPublicRides = async (username) => {
-  const response = await fetch(`${API_BASE}/rides/user/${username}`, { headers: getHeaders() });
-  if (!response.ok) throw new Error('Failed to fetch public rides or profile is private');
+  const response = await apiFetch(`${API_BASE}/rides/user/${username}`, { headers: getHeaders() }, 'Failed to fetch public rides or profile is private');
   return response.json();
 };
 
 export const fetchRideAnalysis = async (rideId, token = null) => {
   const url = token ? `${API_BASE}/rides/${rideId}/analyze?token=${token}` : `${API_BASE}/rides/${rideId}/analyze`;
-  const headers = getHeaders(); // optional if anonymous
-  const response = await fetch(url, { headers });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Failed to fetch ride analysis');
-  }
+  const response = await apiFetch(url, { headers: getHeaders() }, 'Failed to fetch ride analysis');
   return response.json();
 };
 
 // Admin Endpoints
 export const adminFetchUsers = async () => {
-  const response = await fetch(`${API_BASE}/admin/users`, { headers: getHeaders() });
-  if (!response.ok) throw new Error('Failed to fetch users');
+  const response = await apiFetch(`${API_BASE}/admin/users`, { headers: getHeaders() }, 'Failed to fetch users');
   return response.json();
 };
 
 export const adminUpdateUserRole = async (userId, role) => {
-  const response = await fetch(`${API_BASE}/admin/users/${userId}/role`, {
+  const response = await apiFetch(`${API_BASE}/admin/users/${userId}/role`, {
     method: 'PATCH',
     headers: { ...getHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ role })
-  });
-  if (!response.ok) throw new Error('Failed to update role');
+  }, 'Failed to update role');
   return response.json();
 };
 
 export const adminUpdateUserStatus = async (userId, is_active) => {
-  const response = await fetch(`${API_BASE}/admin/users/${userId}/status`, {
+  const response = await apiFetch(`${API_BASE}/admin/users/${userId}/status`, {
     method: 'PATCH',
     headers: { ...getHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ is_active })
-  });
-  if (!response.ok) throw new Error('Failed to update status');
+  }, 'Failed to update status');
   return response.json();
 };
 
 export const adminGenerateInvite = async () => {
-  const response = await fetch(`${API_BASE}/admin/invites`, {
+  const response = await apiFetch(`${API_BASE}/admin/invites`, {
     method: 'POST',
     headers: getHeaders()
-  });
-  if (!response.ok) throw new Error('Failed to generate invite');
+  }, 'Failed to generate invite');
   return response.json();
 };
 
 export const adminFetchInvites = async () => {
-  const response = await fetch(`${API_BASE}/admin/invites`, { headers: getHeaders() });
-  if (!response.ok) throw new Error('Failed to fetch invites');
+  const response = await apiFetch(`${API_BASE}/admin/invites`, { headers: getHeaders() }, 'Failed to fetch invites');
   return response.json();
 };
 
 export const adminNukeDatabase = async (nukeCode) => {
-  const response = await fetch(`${API_BASE}/admin/nuke`, {
+  const response = await apiFetch(`${API_BASE}/admin/nuke`, {
     method: 'POST',
     headers: { ...getHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ nuke_code: nukeCode })
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.detail || 'Nuke failed');
-  }
+  }, 'Nuke failed');
   return response.json();
 };
 
 export const fetchBikes = async () => {
-  const response = await fetch(`${API_BASE}/bikes/`, { headers: getHeaders() });
-  if (!response.ok) throw new Error('Failed to fetch bikes');
+  const response = await apiFetch(`${API_BASE}/bikes/`, { headers: getHeaders() }, 'Failed to fetch bikes');
+  return response.json();
+};
+
+export const createBike = async (data) => {
+  const response = await apiFetch(`${API_BASE}/bikes/`, {
+    method: 'POST',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }, 'Failed to create bike');
+  return response.json();
+};
+
+export const updateBike = async (bikeId, data) => {
+  const response = await apiFetch(`${API_BASE}/bikes/${bikeId}`, {
+    method: 'PATCH',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }, 'Failed to update bike');
+  return response.json();
+};
+
+export const deleteBike = async (bikeId) => {
+  const response = await apiFetch(`${API_BASE}/bikes/${bikeId}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  }, 'Failed to delete bike');
   return response.json();
 };
 
@@ -197,23 +220,21 @@ export const analyzeRide = async (file, params, auxFile = null) => {
   formData.append('tires', params.tires);
   formData.append('position', params.position);
   formData.append('drivetrain', params.drivetrain);
+  if (params.visibility) formData.append('visibility', params.visibility);
+  if (params.name) formData.append('name', params.name);
+  if (params.bike_id) formData.append('bike_id', params.bike_id);
 
-  const response = await fetch(`${API_BASE}/analyze`, {
+  const response = await apiFetch(`${API_BASE}/analyze`, {
     method: 'POST',
     headers: getHeaders(),
     body: formData,
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Failed to analyze ride');
-  }
+  }, 'Failed to analyze ride');
 
   return response.json();
 };
 
 export const reanalyzeSavedRide = async (rideId, params) => {
-  const response = await fetch(`${API_BASE}/rides/${rideId}/reanalyze`, {
+  const response = await apiFetch(`${API_BASE}/rides/${rideId}/reanalyze`, {
     method: 'POST',
     headers: { ...getHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -223,12 +244,73 @@ export const reanalyzeSavedRide = async (rideId, params) => {
       position: params.position,
       drivetrain: params.drivetrain
     }),
-  });
+  }, 'Failed to re-analyze ride');
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Failed to re-analyze ride');
-  }
+  return response.json();
+};
 
+export const fetchCollections = async () => {
+  const response = await apiFetch(`${API_BASE}/collections/`, { headers: getHeaders() }, 'Failed to fetch collections');
+  return response.json();
+};
+
+export const fetchUserCollections = async (username) => {
+  const response = await apiFetch(`${API_BASE}/collections/user/${username}`, { headers: getHeaders() }, 'Failed to fetch collections');
+  return response.json();
+};
+
+export const fetchCollection = async (collectionId, token = null) => {
+  const url = token ? `${API_BASE}/collections/${collectionId}?token=${token}` : `${API_BASE}/collections/${collectionId}`;
+  const response = await apiFetch(url, { headers: getHeaders() }, 'Failed to fetch collection');
+  return response.json();
+};
+
+export const createCollection = async (data) => {
+  const response = await apiFetch(`${API_BASE}/collections/`, {
+    method: 'POST',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }, 'Failed to create collection');
+  return response.json();
+};
+
+export const updateCollection = async (collectionId, data) => {
+  const response = await apiFetch(`${API_BASE}/collections/${collectionId}`, {
+    method: 'PATCH',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }, 'Failed to update collection');
+  return response.json();
+};
+
+export const deleteCollection = async (collectionId) => {
+  const response = await apiFetch(`${API_BASE}/collections/${collectionId}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  }, 'Failed to delete collection');
+  return response.json();
+};
+
+export const addRideToCollection = async (collectionId, rideId) => {
+  const response = await apiFetch(`${API_BASE}/collections/${collectionId}/rides?ride_id=${rideId}`, {
+    method: 'POST',
+    headers: getHeaders()
+  }, 'Failed to add ride to collection');
+  return response.json();
+};
+
+export const removeRideFromCollection = async (collectionId, rideId) => {
+  const response = await apiFetch(`${API_BASE}/collections/${collectionId}/rides/${rideId}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  }, 'Failed to remove ride from collection');
+  return response.json();
+};
+
+export const generateCollectionShareToken = async (collectionId) => {
+  const response = await apiFetch(`${API_BASE}/collections/${collectionId}/share`, {
+    method: 'POST',
+    headers: getHeaders()
+  }, 'Failed to generate share link');
   return response.json();
 };

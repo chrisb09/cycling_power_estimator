@@ -1,9 +1,12 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# We will use a local SQLite database for simplicity and easy porting
-SQLALCHEMY_DATABASE_URL = "sqlite:///./cycling_power.db"
+# Database path: use /app/data in Docker, ./data in local dev
+DATA_DIR = os.environ.get("DATA_DIR", "./data")
+os.makedirs(DATA_DIR, exist_ok=True)
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DATA_DIR}/cycling_power.db"
 
 # check_same_thread=False is needed only for SQLite to allow multiple threads to share the connection
 engine = create_engine(

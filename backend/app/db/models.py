@@ -22,6 +22,7 @@ class User(Base):
 
     bikes = relationship("Bike", back_populates="owner")
     rides = relationship("Ride", back_populates="rider")
+    collections = relationship("Collection", back_populates="owner")
 
 class InviteKey(Base):
     __tablename__ = "invite_keys"
@@ -44,6 +45,8 @@ class Bike(Base):
     weight_kg = Column(Float, default=10.0)
     tire_type = Column(String, default="commuter") # 'slick', 'commuter', 'gravel', 'mtb'
     drivetrain_efficiency = Column(Float, default=0.95) # e.g. 0.97, 0.95, 0.92
+    default_riding_position = Column(String, nullable=True) # 'tops', 'hoods', 'drops', 'aero'
+    drivetrain = Column(String, default="average") # 'optimized', 'average', 'dirty'
 
     owner = relationship("User", back_populates="bikes")
     rides = relationship("Ride", back_populates="bike")
@@ -64,6 +67,12 @@ class Ride(Base):
     analysis_version = Column(Integer, default=1)
     analysis_cache = Column(String, nullable=True) # JSON dump of the analysis result
     
+    # Snapshot of physical parameters used during analysis
+    rider_kg = Column(Float, default=75.0, nullable=True)
+    bike_kg = Column(Float, default=10.0)
+    tires = Column(String, default="commuter")
+    drivetrain = Column(String, default="average")
+
     # Pre-computed summary stats
     avg_power_watts = Column(Float)
     normalized_power_watts = Column(Float)
@@ -74,3 +83,31 @@ class Ride(Base):
 
     rider = relationship("User", back_populates="rides")
     bike = relationship("Bike", back_populates="rides")
+    collections = relationship("CollectionRide", back_populates="ride")
+
+
+class Collection(Base):
+    __tablename__ = "collections"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    name = Column(String)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    visibility = Column(String, default="private")
+    share_token = Column(String, nullable=True, unique=True, index=True)
+
+    owner = relationship("User", back_populates="collections")
+    rides = relationship("CollectionRide", back_populates="collection", cascade="all, delete-orphan")
+
+
+class CollectionRide(Base):
+    __tablename__ = "collection_rides"
+
+    id = Column(Integer, primary_key=True, index=True)
+    collection_id = Column(Integer, ForeignKey("collections.id"))
+    ride_id = Column(Integer, ForeignKey("rides.id"))
+    position = Column(Integer, default=0)
+
+    collection = relationship("Collection", back_populates="rides")
+    ride = relationship("Ride", back_populates="collections")

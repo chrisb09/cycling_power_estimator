@@ -2,16 +2,35 @@ import React from 'react';
 import { ResponsiveContainer, ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceDot, ReferenceLine } from 'recharts';
 
 export default function RideChart({ points, summary, xAxisKey = "distance", title = "Telemetry Profile" }) {
-  const [isMobile, setIsMobile] = React.useState(typeof window !== 'undefined' ? window.innerWidth <= 900 : false);
+  const [windowWidth, setWindowWidth] = React.useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  );
 
   React.useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 900);
+    let timeoutId = null;
+    const handleResize = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => setWindowWidth(window.innerWidth), 150);
+    };
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
-  if (!points || points.length === 0) return null;
+  const getTarget = (width) => {
+    if (width <= 600) return 120;
+    if (width <= 900) return 200;
+    if (width <= 1280) return 300;
+    if (width <= 1800) return 500;
+    return 800;
+  };
 
+  const isMobile = windowWidth <= 900;
+  const target = getTarget(windowWidth);
+
+  // ── all hooks must come before any early return ──
   const formatTime = (seconds) => {
     if (seconds === undefined || isNaN(seconds)) return '';
     const h = Math.floor(seconds / 3600);
@@ -79,22 +98,23 @@ export default function RideChart({ points, summary, xAxisKey = "distance", titl
 
   const displayPoints = React.useMemo(() => {
     if (!points || points.length === 0) return [];
-    if (!isMobile) return points;
-    
+
+    const bucketSize = Math.max(1, Math.floor(points.length / target));
+    if (bucketSize <= 1) return points;
+
     const criticalTime = new Set([
       maxPowerPt, maxSpeedPt, maxElePt, minElePt, maxHRPt, minHRPt, maxCadPt, maxGradPt, minGradPt
     ].filter(Boolean).map(p => p.time_s));
 
-    const bucketSize = 8;
     const result = [];
     let currentChunk = [];
-    
+
     const averageChunk = (chunk) => {
       if (chunk.length === 1) return chunk[0];
       const avgPoint = { ...chunk[Math.floor(chunk.length / 2)] };
       let sumPower = 0, sumSpeed = 0, sumEle = 0, sumHR = 0, sumCad = 0;
       let countHR = 0, countCad = 0;
-      
+
       chunk.forEach(p => {
         sumPower += p.power || 0;
         sumSpeed += p.speed || 0;
@@ -102,7 +122,7 @@ export default function RideChart({ points, summary, xAxisKey = "distance", titl
         if (p.hr != null) { sumHR += p.hr; countHR++; }
         if (p.cad != null) { sumCad += p.cad; countCad++; }
       });
-      
+
       avgPoint.power = sumPower / chunk.length;
       avgPoint.speed = sumSpeed / chunk.length;
       avgPoint.elevation = sumEle / chunk.length;
@@ -110,15 +130,14 @@ export default function RideChart({ points, summary, xAxisKey = "distance", titl
       if (countCad > 0) avgPoint.cad = sumCad / countCad;
       return avgPoint;
     };
-    
+
     for (let i = 0; i < points.length; i++) {
       const p = points[i];
       const prevP = i > 0 ? points[i - 1] : null;
-      
+
       const isTimeGap = prevP && (p.time_s - prevP.time_s > 30);
       const isPauseEdge = prevP && ((p.speed < 0.5) !== (prevP.speed < 0.5));
-      
-      // Flush chunks on gaps or edges of pauses to completely protect flatlines from smearing
+
       if (isTimeGap || isPauseEdge) {
         if (currentChunk.length > 0) {
           result.push(averageChunk(currentChunk));
@@ -128,35 +147,32 @@ export default function RideChart({ points, summary, xAxisKey = "distance", titl
         result.push(p);
         continue;
       }
-      
+
       currentChunk.push(p);
-      
+
       if (currentChunk.length >= bucketSize) {
         result.push(averageChunk(currentChunk));
         currentChunk = [];
       }
     }
-    
+
     if (currentChunk.length > 0) {
       result.push(averageChunk(currentChunk));
     }
-    
-    // Explicitly add global extrema using unique time identifiers
+
     points.forEach(p => {
         if (criticalTime.has(p.time_s)) {
             result.push(p);
         }
     });
-    
-    // Sort to ensure monotonic X-axis so Recharts doesn't glitch. If X is same (e.g. paused at same distance), sort by time to preserve vertical order!
+
     result.sort((a, b) => {
         if (a[xAxisKey] === b[xAxisKey]) {
             return a.time_s - b.time_s;
         }
         return a[xAxisKey] - b[xAxisKey];
     });
-    
-    // Deduplicate exact chronologically identical points
+
     const deduped = [];
     for (let i = 0; i < result.length; i++) {
         if (i === 0 || result[i].time_s !== result[i-1].time_s) {
@@ -164,7 +180,9 @@ export default function RideChart({ points, summary, xAxisKey = "distance", titl
         }
     }
     return deduped;
-  }, [points, isMobile, xAxisKey, maxPowerPt, maxSpeedPt, maxElePt, minElePt, maxHRPt, minHRPt, maxCadPt, maxGradPt, minGradPt]);
+  }, [points, target, xAxisKey, maxPowerPt, maxSpeedPt, maxElePt, minElePt, maxHRPt, minHRPt, maxCadPt, maxGradPt, minGradPt]);
+
+  if (!points || points.length === 0) return null;
 
   return (
     <div className="glass-panel animate-fade-in" style={{ animationDelay: '0.4s', height: '400px', padding: '24px', marginBottom: '24px' }}>

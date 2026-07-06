@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from datetime import datetime
 import uuid
 from app.db.database import get_db
-from app.db.models import Ride, User
+from app.db.models import Ride, User, Bike, Collection
 from app.api.auth import get_current_user, get_current_user_optional
 import os
 import json
@@ -55,6 +55,12 @@ class RideUpdateRequest(BaseModel):
     name: Optional[str] = None
     visibility: Optional[str] = None
     generate_token: Optional[bool] = False
+    bike_id: Optional[int] = None
+    rider_kg: Optional[float] = None
+    bike_kg: Optional[float] = None
+    tires: Optional[str] = None
+    drivetrain: Optional[str] = None
+    riding_position: Optional[str] = None
 
 @router.patch("/{ride_id}")
 def update_ride(ride_id: int, payload: RideUpdateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -68,6 +74,36 @@ def update_ride(ride_id: int, payload: RideUpdateRequest, db: Session = Depends(
         ride.visibility = payload.visibility
     if payload.generate_token:
         ride.share_token = str(uuid.uuid4())
+
+    if payload.bike_id is not None:
+        if payload.bike_id > 0:
+            bike = db.query(Bike).filter(Bike.id == payload.bike_id, Bike.user_id == current_user.id).first()
+            if not bike:
+                raise HTTPException(status_code=404, detail="Bike preset not found")
+            ride.bike_id = payload.bike_id
+        else:
+            ride.bike_id = None
+
+    if payload.rider_kg is not None:
+        if payload.rider_kg <= 0:
+            raise HTTPException(status_code=400, detail="rider_kg must be greater than 0")
+        ride.rider_kg = payload.rider_kg
+    if payload.bike_kg is not None:
+        if payload.bike_kg < 0:
+            raise HTTPException(status_code=400, detail="bike_kg must be non-negative")
+        ride.bike_kg = payload.bike_kg
+    if payload.tires is not None:
+        if payload.tires not in ["slick", "commuter", "gravel", "mtb"]:
+            raise HTTPException(status_code=400, detail="Invalid tires value")
+        ride.tires = payload.tires
+    if payload.drivetrain is not None:
+        if payload.drivetrain not in ["optimized", "average", "dirty"]:
+            raise HTTPException(status_code=400, detail="Invalid drivetrain value")
+        ride.drivetrain = payload.drivetrain
+    if payload.riding_position is not None:
+        if payload.riding_position not in ["tops", "hoods", "drops", "aero"]:
+            raise HTTPException(status_code=400, detail="Invalid riding_position value")
+        ride.riding_position = payload.riding_position
         
     db.commit()
     db.refresh(ride)
@@ -92,6 +128,7 @@ class UserProfileResponse(BaseModel):
     public_rides: List[RideResponse]
     unlisted_rides: List[RideResponse] = []
     private_rides: List[RideResponse] = []
+    public_collections: List[dict] = []
 
 @router.get("/user/{username}", response_model=UserProfileResponse)
 def get_public_profile(username: str, db: Session = Depends(get_db), current_user: Optional[User] = Depends(get_current_user_optional)):
@@ -155,7 +192,18 @@ def get_public_profile(username: str, db: Session = Depends(get_db), current_use
         stats=stats,
         public_rides=public_rides,
         unlisted_rides=unlisted_rides,
-        private_rides=private_rides
+        private_rides=private_rides,
+        public_collections=[
+            {"id": c.id, "name": c.name, "ride_count": len(c.rides)}
+            for c in db.query(Collection).filter(
+                Collection.user_id == user.id, Collection.visibility == "public"
+            ).order_by(Collection.created_at.desc()).all()
+        ] if is_owner_or_admin else [
+            {"id": c.id, "name": c.name, "ride_count": len(c.rides)}
+            for c in db.query(Collection).filter(
+                Collection.user_id == user.id, Collection.visibility == "public"
+            ).order_by(Collection.created_at.desc()).all()
+        ]
     )
 
 @router.get("/{ride_id}/analyze")
@@ -216,14 +264,13 @@ async def analyze_saved_ride(ride_id: int, token: Optional[str] = None, db: Sess
             df = await fetch_elevation_for_df(df)
             is_external_ele = True
             
-        # We need params. Since we only saved riding_position in DB, we'll use defaults for the rest, 
-        # or we could have saved them all. For now, use defaults + saved position.
+        # Use saved parameters from the ride row, falling back to defaults if not set.
         params = RideParams(
-            rider_kg=75.0,
-            bike_kg=10.0,
-            tires="commuter",
-            position=ride.riding_position,
-            drivetrain="average",
+            rider_kg=ride.rider_kg if ride.rider_kg is not None else 75.0,
+            bike_kg=ride.bike_kg if ride.bike_kg is not None else 10.0,
+            tires=ride.tires if ride.tires is not None else "commuter",
+            position=ride.riding_position if ride.riding_position is not None else "hoods",
+            drivetrain=ride.drivetrain if ride.drivetrain is not None else "average",
             ele_smooth_s=60 if is_external_ele else 7
         )
             

@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { LogOut, Home, Upload, Settings, Shield, User, Menu, X } from 'lucide-react';
+import { LogOut, Home, Upload, Settings, Shield, User, Bike, Folder, Menu, X } from 'lucide-react';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -38,6 +38,12 @@ export default function Navbar() {
             </Link>
             <Link to="/dashboard" onClick={() => setIsOpen(false)} style={{ color: 'var(--text-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
               <Home size={18} style={{color: 'var(--primary)'}}/> Dashboard
+            </Link>
+            <Link to="/bikes" onClick={() => setIsOpen(false)} style={{ color: 'var(--text-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
+              <Bike size={18} style={{color: 'var(--primary)'}}/> My Bikes
+            </Link>
+            <Link to="/collections" onClick={() => setIsOpen(false)} style={{ color: 'var(--text-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
+              <Folder size={18} style={{color: 'var(--primary)'}}/> Collections
             </Link>
             <Link to={`/profile/${username}`} onClick={() => setIsOpen(false)} style={{ color: 'var(--text-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
               <User size={18} style={{color: 'var(--primary)'}}/> Profile

@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import UploadForm from '../components/UploadForm';
 import StatsSummary from '../components/StatsSummary';
 import RideHeader from '../components/RideHeader';
 import RideChart from '../components/RideChart';
 import Histograms from '../components/Histograms';
+import { AuthContext } from '../context/AuthContext';
 import { analyzeRide, fetchRideAnalysis, reanalyzeSavedRide } from '../api/client';
-import { Activity, Settings, X } from 'lucide-react';
+import { Activity, Settings, X, User, LogIn } from 'lucide-react';
 
 function Analyze() {
   const [data, setData] = useState(null);
@@ -17,6 +18,7 @@ function Analyze() {
   const [currentAuxFile, setCurrentAuxFile] = useState(null);
   const [currentParams, setCurrentParams] = useState(null);
   const [searchParams] = useSearchParams();
+  const { token, username } = useContext(AuthContext);
 
   useEffect(() => {
     const rideId = searchParams.get('ride_id');
@@ -77,6 +79,22 @@ function Analyze() {
 
         {!data && !loading && (
           <div style={{ maxWidth: '600px', margin: '4vh auto', width: '100%' }}>
+            {token ? (
+              <div className="glass-panel animate-fade-in" style={{ marginBottom: '16px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '8px', borderLeft: '3px solid var(--primary)' }}>
+                <User size={16} color="var(--primary)" />
+                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  Signed in as <strong style={{ color: 'var(--text-primary)' }}>{username}</strong> — this ride will be saved to your account.
+                </p>
+              </div>
+            ) : (
+              <div className="glass-panel animate-fade-in" style={{ marginBottom: '16px', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '8px', borderLeft: '3px solid var(--accent)' }}>
+                <LogIn size={16} color="var(--accent)" />
+                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  Not signed in — analysis will be shown but not saved.{' '}
+                  <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>Log in</Link> to save rides to your account.
+                </p>
+              </div>
+            )}
             <UploadForm 
               onAnalyze={handleAnalyze} 
               isLoading={loading} 

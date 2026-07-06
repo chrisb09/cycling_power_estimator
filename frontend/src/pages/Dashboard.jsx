@@ -7,17 +7,20 @@ import { Activity, Zap, Map, Edit2, Trash2, Clock, Navigation, Globe, Lock, Link
 export default function Dashboard() {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const loadRides = () => {
+    setError(null);
     fetchRides().then(data => {
       setRides(data);
       setLoading(false);
     }).catch(err => {
       console.error(err);
+      setError(err);
       setLoading(false);
     });
   };
@@ -110,6 +113,13 @@ export default function Dashboard() {
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px' }}><div className="spinner" /></div>
+      ) : error ? (
+        <div className="glass-panel" style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <Activity size={48} color="var(--accent)" style={{ marginBottom: '16px' }} />
+          <p style={{ color: 'var(--accent)', fontSize: '1.1rem' }}>
+            {error.status === 401 ? "Session expired, redirecting to login…" : `Error loading dashboard: ${error.message}`}
+          </p>
+        </div>
       ) : rides.length === 0 ? (
         <div className="glass-panel" style={{ textAlign: 'center', padding: '48px 24px' }}>
           <Activity size={48} color="var(--border-color)" style={{ marginBottom: '16px' }} />
