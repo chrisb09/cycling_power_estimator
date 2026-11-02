@@ -1,10 +1,16 @@
 # Database
 *.db
 *.sqlite3
+data/
+backend/data/
 
 # File Storage
 backend/storage/
 storage/
+uploads/
+backend/app/uploads/
+*.gpx
+*.zip
 
 # Python
 __pycache__/
@@ -13,6 +19,7 @@ __pycache__/
 .venv/
 env/
 venv/
+ENV/
 .pytest_cache/
 *.egg-info/
 
@@ -20,5 +27,4 @@ venv/
 node_modules/
 dist/
 .DS_Store
-backend/app/uploads/
 .gemini_api_key
