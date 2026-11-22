@@ -81,6 +81,15 @@ export const updateMe = async (data) => {
   return response.json();
 };
 
+export const changePassword = async (currentPassword, newPassword) => {
+  const response = await apiFetch(`${API_BASE}/me/password`, {
+    method: 'POST',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+  }, 'Failed to change password');
+  return response.json();
+};
+
 export const uploadProfilePicture = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
@@ -155,6 +164,15 @@ export const adminUpdateUserStatus = async (userId, is_active) => {
     headers: { ...getHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ is_active })
   }, 'Failed to update status');
+  return response.json();
+};
+
+export const adminResetUserPassword = async (userId, newPassword) => {
+  const response = await apiFetch(`${API_BASE}/admin/users/${userId}/password`, {
+    method: 'PATCH',
+    headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ new_password: newPassword })
+  }, 'Failed to reset password');
   return response.json();
 };
 

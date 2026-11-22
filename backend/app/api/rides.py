@@ -239,7 +239,7 @@ async def analyze_saved_ride(ride_id: int, token: Optional[str] = None, db: Sess
     from app.physics.gpx_parser import parse_gpx
     from app.physics.pipeline import compute_ride, RideParams
     from app.physics.metrics import summarize
-    from app.api.analyze import fetch_elevation_for_df, fetch_location, downsample
+    from app.api.analyze import augment_elevation_from_aux, fetch_elevation_for_df, fetch_location, downsample
     import pandas as pd
     import numpy as np
     from fastapi.responses import JSONResponse
@@ -281,7 +281,7 @@ async def analyze_saved_ride(ride_id: int, token: Optional[str] = None, db: Sess
         # Add rider username for profile linking
         user = db.query(User).filter(User.id == ride.user_id).first()
         summary["rider_username"] = user.username if user else "Unknown"
-        summary["name"] = os.path.basename(ride.gpx_file_path) if ride.gpx_file_path else ride.name
+        summary["name"] = ride.name if ride.name else os.path.basename(ride.gpx_file_path)
         if ride.aux_gpx_file_path:
             summary["aux_name"] = os.path.basename(ride.aux_gpx_file_path)
         
@@ -405,7 +405,7 @@ async def reanalyze_existing_ride(ride_id: int, payload: ReanalyzeRequest, db: S
     from app.physics.gpx_parser import parse_gpx
     from app.physics.pipeline import compute_ride, RideParams
     from app.physics.metrics import summarize
-    from app.api.analyze import fetch_elevation_for_df, fetch_location, downsample
+    from app.api.analyze import augment_elevation_from_aux, fetch_elevation_for_df, fetch_location, downsample
     import pandas as pd
     import numpy as np
     
@@ -444,7 +444,7 @@ async def reanalyze_existing_ride(ride_id: int, payload: ReanalyzeRequest, db: S
         
         user = db.query(User).filter(User.id == ride.user_id).first()
         summary["rider_username"] = user.username if user else "Unknown"
-        summary["name"] = os.path.basename(ride.gpx_file_path) if ride.gpx_file_path else ride.name
+        summary["name"] = ride.name if ride.name else os.path.basename(ride.gpx_file_path)
         
         loc = await fetch_location(computed_df["lat"].iloc[0], computed_df["lon"].iloc[0])
         summary["location"] = loc

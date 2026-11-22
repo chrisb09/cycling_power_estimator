@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminFetchUsers, adminFetchInvites, adminGenerateInvite, adminUpdateUserRole, adminUpdateUserStatus, fetchMe, adminNukeDatabase } from '../api/client';
+import { adminFetchUsers, adminFetchInvites, adminGenerateInvite, adminUpdateUserRole, adminUpdateUserStatus, adminResetUserPassword, fetchMe, adminNukeDatabase } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
 import { Shield, Users, Key, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
@@ -60,6 +60,22 @@ export default function AdminPanel() {
     }
   };
 
+  const handleResetPassword = async (u) => {
+    const pw = window.prompt(`New password for ${u.username} (at least 8 characters):`);
+    if (!pw) return;
+    if (pw.length < 8) {
+      alert('Password must be at least 8 characters.');
+      return;
+    }
+    if (!window.confirm(`Reset the password for ${u.username}?`)) return;
+    try {
+      await adminResetUserPassword(u.id, pw);
+      alert(`Password for ${u.username} has been reset.`);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const generateInvite = async () => {
     try {
       const invite = await adminGenerateInvite();
@@ -107,6 +123,7 @@ export default function AdminPanel() {
                 <th style={{ padding: '8px 0' }}>Username</th>
                 <th style={{ padding: '8px 0' }}>Role</th>
                 <th style={{ padding: '8px 0' }}>Status</th>
+                <th style={{ padding: '8px 0' }}>Password</th>
               </tr>
             </thead>
             <tbody>
@@ -128,6 +145,15 @@ export default function AdminPanel() {
                       title={u.is_active ? "Disable User" : "Enable User"}
                     >
                       {u.is_active ? <CheckCircle size={20} color="#10B981" /> : <XCircle size={20} color="#EF4444" />}
+                    </button>
+                  </td>
+                  <td style={{ padding: '12px 0' }}>
+                    <button
+                      onClick={() => handleResetPassword(u)}
+                      style={{ background: 'none', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '4px 8px', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.85rem' }}
+                      title="Reset this user's password"
+                    >
+                      Reset
                     </button>
                   </td>
                 </tr>

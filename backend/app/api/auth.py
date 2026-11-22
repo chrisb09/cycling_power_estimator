@@ -163,6 +163,23 @@ def update_me(payload: UserSettingsUpdate, db: Session = Depends(get_db), curren
     db.refresh(current_user)
     return current_user
 
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+@router.post("/me/password", response_model=UserResponse)
+def change_password(payload: PasswordChange, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if len(payload.new_password.encode()) > 72:
+        raise HTTPException(status_code=400, detail="Password must be at most 72 bytes")
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    current_user.password_hash = get_password_hash(payload.new_password)
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads", "profiles")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 

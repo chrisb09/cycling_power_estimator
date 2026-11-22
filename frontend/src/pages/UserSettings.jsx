@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchMe, updateMe, selfPromote, uploadProfilePicture, API_BASE } from '../api/client';
+import { fetchMe, updateMe, selfPromote, uploadProfilePicture, changePassword, API_BASE } from '../api/client';
 import { AuthContext } from '../context/AuthContext';
-import { Settings, Save, Shield, Upload, MapPin } from 'lucide-react';
+import { Settings, Save, Shield, Upload, MapPin, Key } from 'lucide-react';
 
 export default function UserSettings() {
   const [user, setUser] = useState(null);
@@ -20,6 +20,11 @@ export default function UserSettings() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const fileInputRef = useRef(null);
   const [success, setSuccess] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState(null);
+  const [changingPassword, setChangingPassword] = useState(false);
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -93,6 +98,27 @@ export default function UserSettings() {
       alert("Successfully promoted to Admin!");
     } catch (err) {
       alert(err.message);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordMessage(null);
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage({ ok: false, text: 'New passwords do not match.' });
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      setPasswordMessage({ ok: true, text: 'Password changed successfully.' });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      setPasswordMessage({ ok: false, text: err.message });
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -196,6 +222,35 @@ export default function UserSettings() {
           </button>
           
           {success && <div style={{ marginTop: '16px', textAlign: 'center', color: '#10B981', fontSize: '0.9rem' }}>Settings updated successfully!</div>}
+        </form>
+      </div>
+
+      <div className="glass-panel" style={{ padding: '32px', marginTop: '32px' }}>
+        <div style={{ marginBottom: '16px' }}>
+          <h3 style={{ margin: '0 0 8px 0', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Key size={20} /> Change Password
+          </h3>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Confirm your current password, then choose a new one (at least 8 characters).</p>
+        </div>
+        <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="form-group">
+            <label>Current password</label>
+            <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
+          </div>
+          <div className="form-group">
+            <label>New password</label>
+            <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength={8} required />
+          </div>
+          <div className="form-group">
+            <label>Confirm new password</label>
+            <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} minLength={8} required />
+          </div>
+          <button type="submit" className="btn-primary" style={{ padding: '12px' }} disabled={changingPassword}>
+            {changingPassword ? 'Changing…' : 'Change Password'}
+          </button>
+          {passwordMessage && (
+            <div style={{ color: passwordMessage.ok ? '#10B981' : '#EF4444', fontSize: '0.9rem' }}>{passwordMessage.text}</div>
+          )}
         </form>
       </div>
 

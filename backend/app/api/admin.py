@@ -7,6 +7,7 @@ import uuid
 from app.db.database import get_db
 from app.db.models import User, InviteKey
 from app.api.auth import admin_required, UserResponse, get_current_user
+from app.auth import get_password_hash
 import uuid
 
 router = APIRouter()
@@ -70,6 +71,23 @@ def update_user_status(user_id: int, payload: UserStatusUpdate, db: Session = De
     if user.id == current_admin.id and payload.is_active == 0:
         raise HTTPException(status_code=400, detail="Cannot disable your own account")
     user.is_active = payload.is_active
+    db.commit()
+    db.refresh(user)
+    return user
+
+class AdminPasswordReset(BaseModel):
+    new_password: str
+
+@router.patch("/users/{user_id}/password", response_model=UserResponse)
+def admin_reset_password(user_id: int, payload: AdminPasswordReset, db: Session = Depends(get_db), current_admin: User = Depends(admin_required)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if len(payload.new_password.encode()) > 72:
+        raise HTTPException(status_code=400, detail="Password must be at most 72 bytes")
+    if len(payload.new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    user.password_hash = get_password_hash(payload.new_password)
     db.commit()
     db.refresh(user)
     return user
