@@ -60,23 +60,23 @@ SESSIONS = [
     {"name": "Rundtour über Cadier en Keer", "primary": "storage:dd11d8f0-fa75-4cb9-b98b-98b3dc5ad0fa_Zepp20260613203707.gpx",
      "aux": "storage:dd11d8f0-fa75-4cb9-b98b-98b3dc5ad0fa_aux_Fahrradtour.gpx"},
     {"name": "Von Vaals nach Maastricht und zurück", "primary": "Outdoor_cycling-2.gpx"},
-    {"name": "Von Süchteln nach Venlo", "primary": "Zepp20260627163720.gpx"},
-    {"name": "Von Deurne nach Loosdrecht", "primary": "Zepp20260627205055.gpx"},
+    {"name": "Von Süchteln nach Venlo", "primary": "Zepp20260627163720.gpx", "bike_kg": 25.0, "position": "tops"},
+    {"name": "Von Deurne nach Loosdrecht", "primary": "Zepp20260627205055.gpx", "bike_kg": 25.0, "position": "tops"},
     {"name": "Rundtour über Houten", "primary": "Zepp20260628124016.gpx", "aux": "Fahrradtour-6.gpx"},
     {"name": "Von Loosdrecht nach Hilversum", "primary": "Fahrradtour-7.gpx"},
     {"name": "Kurze Runde bei Loosdrecht", "primary": "Zepp20260630123920.gpx"},
     {"name": "Nach Hilversum und zurück", "primary": "Zepp20260630174106.gpx"},
     {"name": "Von Loosdrecht nach Utrecht", "primary": "Zepp20260702094742.gpx", "aux": "Outdoor_cycling-4.gpx"},
     {"name": "Von Den Haag nach Loosdrecht", "primary": "Zepp20260702114431.gpx"},
-    {"name": "Von Loosdrecht nach Utrecht", "primary": "Zepp20260704110206.gpx"},
-    {"name": "Von Maastricht nach Vaals", "primary": "Zepp20260704140807.gpx"},
+    {"name": "Von Loosdrecht nach Utrecht", "primary": "Zepp20260704110206.gpx", "bike_kg": 25.0, "position": "tops"},
+    {"name": "Von Maastricht nach Vaals", "primary": "Zepp20260704140807.gpx", "bike_kg": 25.0, "position": "tops"},
     # Later additions from the Nextcloud tmp folder (August 2026). Each has a
     # second recording of the same ride; the Outdoor_cycling track is used
     # because it has more points / finer elevation detail.
     {"name": "Nach Gulpen und zurück", "primary": "Outdoor_cycling-9.gpx", "batch": "august"},
     {"name": "Rundtour über Cadier en Keer", "primary": "Outdoor_cycling-8.gpx", "batch": "august"},
-    {"name": "Von Vaals nach Kerpen", "primary": "Von_Vaals_nach_Kerpen.gpx", "batch": "august"},
-    {"name": "Von Kerpen nach Vaals", "primary": "Von_Kerpen_nach_Vaals.gpx", "batch": "august"},
+    {"name": "Von Vaals nach Kerpen", "primary": "Von_Vaals_nach_Kerpen.gpx", "bike_kg": 25.0, "position": "tops", "batch": "august"},
+    {"name": "Von Kerpen nach Vaals", "primary": "Von_Kerpen_nach_Vaals.gpx", "bike_kg": 25.0, "position": "tops", "batch": "august"},
 ]
 
 
@@ -245,9 +245,11 @@ def main() -> int:
             df = fetch_elevation(df, cache)
             external = True
 
+        bike_kg = session.get("bike_kg", BIKE_KG)
+        position = session.get("position", POSITION)
         params = RideParams(
-            rider_kg=RIDER_KG, bike_kg=BIKE_KG, tires=TIRES,
-            position=POSITION, drivetrain=DRIVETRAIN,
+            rider_kg=RIDER_KG, bike_kg=bike_kg, tires=TIRES,
+            position=position, drivetrain=DRIVETRAIN,
             ele_smooth_s=60 if external else 7,
         )
         ride = compute_ride(df, params)
@@ -277,8 +279,8 @@ def main() -> int:
                 total_work_kj, distance_km, moving_time_s, location)
                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
-                user_id, session["name"], date.isoformat(sep=" "), gpx_db_path, aux_db_path, POSITION,
-                "private", 0, None, RIDER_KG, BIKE_KG, TIRES, DRIVETRAIN,
+                user_id, session["name"], date.isoformat(sep=" "), gpx_db_path, aux_db_path, position,
+                "private", 0, None, RIDER_KG, bike_kg, TIRES, DRIVETRAIN,
                 stats["avg_power_w"], stats["normalized_power_w"], stats["total_work_kj"],
                 stats["distance_km"], stats["moving_time_s"], location,
             ),
