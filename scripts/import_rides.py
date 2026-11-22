@@ -43,7 +43,7 @@ REMOTE_BASE = "/container/data/cycling_power_estimator"
 STAGE = Path("/tmp/opencode/import_stage")
 ELEV_CACHE_FILE = STAGE / "elevation_cache.json"
 
-RIDER_KG, BIKE_KG = 73.5, 10.0
+RIDER_KG, BIKE_KG = 73.5, 15.0
 TIRES, POSITION, DRIVETRAIN = "commuter", "hoods", "average"
 
 # Each session: one ride on the server. `aux` is a second recording of the

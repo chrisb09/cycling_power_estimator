@@ -22,9 +22,24 @@ export default function UploadForm({ onAnalyze, isLoading, initialFile = null, i
 
   useEffect(() => {
     if (token) {
-      fetchBikes().then(setBikes).catch(() => {});
+      fetchBikes().then(list => {
+        setBikes(list);
+        // New uploads use the saved bike by default instead of the generic 10 kg.
+        if (!initialParams && list.length > 0) {
+          const bike = list[0];
+          setSelectedBikeId(String(bike.id));
+          setParams(p => ({
+            ...p,
+            bike_kg: bike.weight_kg,
+            tires: bike.tire_type,
+            drivetrain: bike.drivetrain,
+            position: bike.default_riding_position || p.position,
+            bike_id: bike.id
+          }));
+        }
+      }).catch(() => {});
     }
-  }, [token]);
+  }, [token, initialParams]);
 
   const handleBikeSelect = (e) => {
     const id = e.target.value;
