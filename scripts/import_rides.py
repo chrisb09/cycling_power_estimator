@@ -70,6 +70,13 @@ SESSIONS = [
     {"name": "Von Den Haag nach Loosdrecht", "primary": "Zepp20260702114431.gpx"},
     {"name": "Von Loosdrecht nach Utrecht", "primary": "Zepp20260704110206.gpx"},
     {"name": "Von Maastricht nach Vaals", "primary": "Zepp20260704140807.gpx"},
+    # Later additions from the Nextcloud tmp folder (August 2026). Each has a
+    # second recording of the same ride; the Outdoor_cycling track is used
+    # because it has more points / finer elevation detail.
+    {"name": "Nach Gulpen und zurück", "primary": "Outdoor_cycling-9.gpx", "batch": "august"},
+    {"name": "Rundtour über Cadier en Keer", "primary": "Outdoor_cycling-8.gpx", "batch": "august"},
+    {"name": "Von Vaals nach Kerpen", "primary": "Von_Vaals_nach_Kerpen.gpx", "batch": "august"},
+    {"name": "Von Kerpen nach Vaals", "primary": "Von_Kerpen_nach_Vaals.gpx", "batch": "august"},
 ]
 
 
@@ -180,7 +187,11 @@ def fetch_location(lat: float, lon: float) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--append", action="store_true",
+                        help="only import the batch of rides marked 'august' (no user insert)")
     args = parser.parse_args()
+
+    sessions = [s for s in SESSIONS if (s.get("batch") == "august") == args.append]
 
     STAGE.mkdir(parents=True, exist_ok=True)
     gpx_stage = STAGE / "gpx"
@@ -204,18 +215,20 @@ def main() -> int:
     con.row_factory = sqlite3.Row
     existing_user = con.execute("SELECT id FROM users WHERE username = 'christian'").fetchone()
     if existing_user:
-        print("ERROR: user 'christian' already exists on server; refusing to duplicate", file=sys.stderr)
-        return 1
-    user_id = user["id"]
-
-    user_cols = list(user.keys())
-    con.execute(
-        f"INSERT INTO users ({','.join(user_cols)}) VALUES ({','.join('?' * len(user_cols))})",
-        [user[c] for c in user_cols],
-    )
+        if not args.append:
+            print("ERROR: user 'christian' already exists on server; refusing to duplicate", file=sys.stderr)
+            return 1
+        user_id = existing_user["id"]
+    else:
+        user_id = user["id"]
+        user_cols = list(user.keys())
+        con.execute(
+            f"INSERT INTO users ({','.join(user_cols)}) VALUES ({','.join('?' * len(user_cols))})",
+            [user[c] for c in user_cols],
+        )
 
     print(f"{'name':<30}{'date':<12}{'pts':>6}{'ele':>5}{'W':>5}{'NP':>5}{'kJ':>6}  files")
-    for session in SESSIONS:
+    for session in sessions:
         primary_path = source_path(session["primary"])
         df = parse_gpx(primary_path)
         aux_path = source_path(session["aux"]) if session.get("aux") else None
